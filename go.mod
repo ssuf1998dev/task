@@ -16,10 +16,13 @@ require (
 	github.com/go-git/go-git/v5 v5.16.0
 	github.com/go-task/slim-sprig/v3 v3.0.0
 	github.com/go-task/template v0.1.0
+	github.com/gobeam/stringy v0.0.7
+	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/otiai10/copy v1.14.1
 	github.com/puzpuzpuz/xsync/v3 v3.5.1
+	github.com/rs/xid v1.6.0
 	github.com/sajari/fuzzy v1.0.0
 	github.com/sebdah/goldie/v2 v2.5.5
 	github.com/spf13/pflag v1.0.6

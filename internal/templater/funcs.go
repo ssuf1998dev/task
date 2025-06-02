@@ -7,6 +7,9 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/gobeam/stringy"
+	"github.com/google/uuid"
+	"github.com/rs/xid"
 	"mvdan.cc/sh/v3/shell"
 	"mvdan.cc/sh/v3/syntax"
 
@@ -69,6 +72,38 @@ func init() {
 		},
 		"spew": func(v any) string {
 			return spew.Sdump(v)
+		},
+		// id
+		"uuid": func() string {
+			return uuid.New().String()
+		},
+		"xid": func() string {
+			return xid.New().String()
+		},
+		// stringy
+		"camelCase": func(v string, rule ...string) string {
+			return stringy.New(v).CamelCase(rule...).Get()
+		},
+		"snakeCase": func(v string, rule ...string) string {
+			return stringy.New(v).SnakeCase(rule...).Get()
+		},
+		"pascalCase": func(v string, rule ...string) string {
+			return stringy.New(v).PascalCase(rule...).Get()
+		},
+		"kebabCase": func(v string, rule ...string) string {
+			return stringy.New(v).KebabCase(rule...).Get()
+		},
+		"upperFirst": func(v string) string {
+			return stringy.New(v).UcFirst()
+		},
+		"lowerFirst": func(v string) string {
+			return stringy.New(v).LcFirst()
+		},
+		"pad": func(v string, length int, with, padType string) string {
+			return stringy.New(v).Pad(length, with, padType)
+		},
+		"acronym": func(v string) string {
+			return stringy.New(v).Acronym().Get()
 		},
 	}
 
