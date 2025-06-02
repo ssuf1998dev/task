@@ -1,12 +1,16 @@
 package templater
 
 import (
+	"encoding/json"
+	"fmt"
 	"maps"
+	"math/rand"
 	"path/filepath"
 	"runtime"
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/go-faker/faker/v4"
 	"github.com/gobeam/stringy"
 	"github.com/google/uuid"
 	"github.com/rs/xid"
@@ -73,14 +77,26 @@ func init() {
 		"spew": func(v any) string {
 			return spew.Sdump(v)
 		},
-		// id
+	}
+
+	// aliases
+	taskFuncs["q"] = taskFuncs["shellQuote"]
+
+	// Deprecated aliases for renamed functions.
+	taskFuncs["FromSlash"] = taskFuncs["fromSlash"]
+	taskFuncs["ToSlash"] = taskFuncs["toSlash"]
+	taskFuncs["ExeExt"] = taskFuncs["exeExt"]
+
+	idFuncs := template.FuncMap{
 		"uuid": func() string {
 			return uuid.New().String()
 		},
 		"xid": func() string {
 			return xid.New().String()
 		},
-		// stringy
+	}
+
+	stringyFuncs := template.FuncMap{
 		"camelCase": func(v string, rule ...string) string {
 			return stringy.New(v).CamelCase(rule...).Get()
 		},
@@ -107,14 +123,151 @@ func init() {
 		},
 	}
 
-	// aliases
-	taskFuncs["q"] = taskFuncs["shellQuote"]
+	fakerFuncs := template.FuncMap{
+		// Address
+		"_latitude": func() float64 {
+			return faker.Latitude()
+		},
+		"_longitude": func() float64 {
+			return faker.Longitude()
+		},
+		"_getRealAddress": func() map[string]any {
+			b, _ := json.Marshal(faker.GetRealAddress())
+			var m map[string]any
+			_ = json.Unmarshal(b, &m)
+			return m
+		},
 
-	// Deprecated aliases for renamed functions.
-	taskFuncs["FromSlash"] = taskFuncs["fromSlash"]
-	taskFuncs["ToSlash"] = taskFuncs["toSlash"]
-	taskFuncs["ExeExt"] = taskFuncs["exeExt"]
+		// Datetime
+		"_unixTime": func() int64 {
+			return faker.UnixTime()
+		},
+		"_date": func() string {
+			return faker.Date()
+		},
+		"_timeString": func() string {
+			return faker.TimeString()
+		},
+		"_monthName": func() string {
+			return faker.MonthName()
+		},
+		"_yearString": func() string {
+			return faker.YearString()
+		},
+		"_dayOfWeek": func() string {
+			return faker.DayOfWeek()
+		},
+		"_dayOfMonth": func() string {
+			return faker.DayOfMonth()
+		},
+		"_timestamp": func() string {
+			return faker.Timestamp()
+		},
+		"_century": func() string {
+			return faker.Century()
+		},
+		"_timezone": func() string {
+			return faker.Timezone()
+		},
+		"_timeperiod": func() string {
+			return faker.Timeperiod()
+		},
+
+		// Internet
+		"_email": func() string {
+			return faker.Email()
+		},
+		"_macAddress": func() string {
+			return faker.MacAddress()
+		},
+		"_domainName": func() string {
+			return faker.DomainName()
+		},
+		"_url": func() string {
+			return faker.URL()
+		},
+		"_username": func() string {
+			return faker.Username()
+		},
+		"_ipv4": func() string {
+			return faker.IPv4()
+		},
+		"_ipv6": func() string {
+			return faker.IPv6()
+		},
+		"_password": func() string {
+			return faker.Password()
+		},
+
+		// Words and Sentences
+		"_word": func() string {
+			return faker.Word()
+		},
+		"_sentence": func() string {
+			return faker.Sentence()
+		},
+		"_paragraph": func() string {
+			return faker.Paragraph()
+		},
+
+		// Payment
+		"_creditCardType": func() string {
+			return faker.CCType()
+		},
+		"_creditCardNumber": func() string {
+			return faker.CCNumber()
+		},
+		"_currency": func() string {
+			return faker.Currency()
+		},
+		"_amountWithCurrency": func() string {
+			return faker.AmountWithCurrency()
+		},
+
+		// Person
+		"_titleMale": func() string {
+			return faker.TitleMale()
+		},
+		"_titleFemale": func() string {
+			return faker.TitleFemale()
+		},
+		"_firstName": func() string {
+			return faker.FirstName()
+		},
+		"_firstNameMale": func() string {
+			return faker.FirstNameMale()
+		},
+		"_firstNameFemale": func() string {
+			return faker.FirstNameFemale()
+		},
+		"_lastName": func() string {
+			return faker.LastName()
+		},
+		"_name": func() string {
+			if rand.Intn(100) > 50 {
+				return fmt.Sprintf("%s %s", faker.FirstNameFemale(), faker.LastName())
+			}
+			return fmt.Sprintf("%s %s", faker.FirstNameMale(), faker.LastName())
+		},
+
+		// Phone
+		"_phonenumber": func() string {
+			return faker.Phonenumber()
+		},
+		"_tollFreePhoneNumber": func() string {
+			return faker.TollFreePhoneNumber()
+		},
+		"_e164PhoneNumber": func() string {
+			return faker.E164PhoneNumber()
+		},
+	}
+
+	fakerFuncs["_CCType"] = fakerFuncs["_creditCardType"]
+	fakerFuncs["_CCNumber"] = fakerFuncs["_creditCardNumber"]
 
 	templateFuncs = template.FuncMap(sprig.TxtFuncMap())
 	maps.Copy(templateFuncs, taskFuncs)
+	maps.Copy(templateFuncs, idFuncs)
+	maps.Copy(templateFuncs, stringyFuncs)
+	maps.Copy(templateFuncs, fakerFuncs)
 }
