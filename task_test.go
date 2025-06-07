@@ -1359,6 +1359,23 @@ func TestIncludesUnshadowedDefault(t *testing.T) {
 	})
 }
 
+func TestPlugins(t *testing.T) {
+	t.Parallel()
+
+	tt := fileContentTest{
+		Dir:       "testdata/plugins",
+		Target:    "default",
+		TrimSpace: true,
+		Files: map[string]string{
+			"a__hello.txt": "Hello, world!",
+		},
+	}
+	t.Run("", func(t *testing.T) {
+		t.Parallel()
+		tt.Run(t)
+	})
+}
+
 func TestSupportedFileNames(t *testing.T) {
 	t.Parallel()
 

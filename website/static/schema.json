@@ -695,6 +695,28 @@
             }
           }
         },
+        "plugins": {
+          "description": "Loads plugins from the specified files, which will provide some custom functions prefixed with plugin name.",
+          "type": "object",
+          "patternProperties": {
+            "^.*$": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "file": {
+                      "description": "The path for loading plugin. If a relative path, resolved relative to the directory containing the including Taskfile.",
+                      "type": "string"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
         "vars": {
           "description": "A set of global variables.",
           "$ref": "#/definitions/vars"

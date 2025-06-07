@@ -2,12 +2,17 @@ package taskfile
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/dominikbraun/graph"
+	extism "github.com/extism/go-sdk"
+	"github.com/tetratelabs/wazero"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 
@@ -16,6 +21,7 @@ import (
 	"github.com/go-task/task/v3/internal/filepathext"
 	"github.com/go-task/task/v3/internal/templater"
 	"github.com/go-task/task/v3/taskfile/ast"
+	"github.com/go-task/template"
 )
 
 const (
@@ -191,6 +197,66 @@ func (r *Reader) Read(ctx context.Context, node Node) (*ast.TaskfileGraph, error
 		return nil, err
 	}
 	return r.graph, nil
+}
+
+func (r *Reader) LoadPlugin(ctx context.Context, node Node) error {
+	var tf *ast.Taskfile
+	var err error
+	tf, err = r.readNode(ctx, node)
+	if err != nil {
+		return err
+	}
+
+	funcs := template.FuncMap{}
+	var g errgroup.Group
+	for name, value := range tf.Plugins.All() {
+		g.Go(func() error {
+			pluginFile := filepath.Join(node.Dir(), value.File)
+			mft := extism.Manifest{
+				Wasm: []extism.Wasm{
+					extism.WasmFile{Path: pluginFile, Name: name},
+				},
+			}
+
+			config := extism.PluginConfig{
+				EnableWasi: true,
+				ModuleConfig: wazero.NewModuleConfig().
+					WithRandSource(rand.Reader).
+					WithSysNanotime().
+					WithSysWalltime(),
+			}
+			plugin, err := extism.NewPlugin(ctx, mft, config, []extism.HostFunction{})
+			if err != nil {
+				return err
+			}
+
+			_, exposes, err := plugin.Call("exposes", make([]byte, 0))
+			if err != nil {
+				return nil
+			}
+
+			var funcKeys []string
+			if err := json.Unmarshal(exposes, &funcKeys); err == nil {
+				for _, key := range funcKeys {
+					funcs[fmt.Sprintf("%s__%s", name, key)] = func(data string) string {
+						_, out, err := plugin.Call(key, []byte(data))
+						if err != nil {
+							return ""
+						}
+						return string(out)
+					}
+				}
+			}
+
+			return nil
+		})
+	}
+	err = g.Wait()
+	if err != nil {
+		return err
+	}
+	templater.TemplateFuncsCopy(&funcs)
+	return nil
 }
 
 func (r *Reader) debugf(format string, a ...any) {

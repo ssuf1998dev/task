@@ -82,6 +82,7 @@ func (e *Executor) readTaskfile(node taskfile.Node) error {
 		taskfile.WithPromptFunc(promptFunc),
 	)
 	graph, err := reader.Read(ctx, node)
+	reader.LoadPlugin(ctx, node)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return &errors.TaskfileNetworkTimeoutError{URI: node.Location(), Timeout: e.Timeout}

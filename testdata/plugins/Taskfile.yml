@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=../../website/static/schema.json
+version: "3"
+
+plugins:
+  a:
+    file: a.wasm
+
+tasks:
+  default:
+    cmd: echo {{a__hello "world"}} > a__hello.txt
