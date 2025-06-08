@@ -20,14 +20,25 @@ func TestPluginsParse(t *testing.T) {
 	}{
 		{
 			`
-a: a
+a: a.wasm
 b:
-  file: b
+  file: b.wasm
 `,
 			&ast.Plugins{},
 			ast.NewPlugins(
-				&ast.PluginElement{Key: "a", Value: &ast.Plugin{File: "a"}},
-				&ast.PluginElement{Key: "b", Value: &ast.Plugin{File: "b"}},
+				&ast.PluginElement{Key: "a", Value: &ast.Plugin{File: "a.wasm"}},
+				&ast.PluginElement{Key: "b", Value: &ast.Plugin{File: "b.wasm"}},
+			),
+		},
+		{
+			`
+- a.wasm
+- b.wasm
+`,
+			&ast.Plugins{},
+			ast.NewPlugins(
+				&ast.PluginElement{Key: "a", Value: &ast.Plugin{File: "a.wasm"}},
+				&ast.PluginElement{Key: "b", Value: &ast.Plugin{File: "b.wasm"}},
 			),
 		},
 	}

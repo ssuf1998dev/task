@@ -2,6 +2,8 @@ package ast
 
 import (
 	"iter"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"gopkg.in/yaml.v3"
@@ -88,6 +90,17 @@ func (plugins *Plugins) UnmarshalYAML(node *yaml.Node) error {
 	}
 
 	switch node.Kind {
+	case yaml.SequenceNode:
+		var list []string
+		if err := node.Decode(&list); err != nil {
+			return errors.NewTaskfileDecodeError(err, node)
+		}
+		for _, v := range list {
+			fn := filepath.Base(v)
+			name := strings.TrimSuffix(fn, filepath.Ext(fn))
+			plugins.Set(name, &Plugin{File: v})
+		}
+		return nil
 	case yaml.MappingNode:
 		for i := 0; i < len(node.Content); i += 2 {
 			keyNode := node.Content[i]
