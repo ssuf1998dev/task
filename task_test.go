@@ -1367,7 +1367,7 @@ func TestPlugins(t *testing.T) {
 		Target:    "default",
 		TrimSpace: true,
 		Files: map[string]string{
-			"a__hello.txt": "Hello, world!",
+			"hello_hello_world.txt": "Hello, world!",
 		},
 	}
 	t.Run("", func(t *testing.T) {

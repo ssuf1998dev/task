@@ -2,8 +2,6 @@ package taskfile
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -21,7 +19,6 @@ import (
 	"github.com/go-task/task/v3/internal/filepathext"
 	"github.com/go-task/task/v3/internal/templater"
 	"github.com/go-task/task/v3/taskfile/ast"
-	"github.com/go-task/template"
 )
 
 const (
@@ -207,47 +204,22 @@ func (r *Reader) LoadPlugin(ctx context.Context, node Node) error {
 		return err
 	}
 
-	funcs := template.FuncMap{}
 	var g errgroup.Group
+	plugins := make(map[string]*extism.Plugin)
 	for name, value := range tf.Plugins.All() {
 		g.Go(func() error {
-			pluginFile := filepath.Join(node.Dir(), value.File)
 			mft := extism.Manifest{
-				Wasm: []extism.Wasm{
-					extism.WasmFile{Path: pluginFile, Name: name},
-				},
+				Wasm: []extism.Wasm{extism.WasmFile{Path: filepath.Join(node.Dir(), value.File), Name: name}},
 			}
-
 			config := extism.PluginConfig{
-				EnableWasi: true,
-				ModuleConfig: wazero.NewModuleConfig().
-					WithRandSource(rand.Reader).
-					WithSysNanotime().
-					WithSysWalltime(),
+				EnableWasi:   true,
+				ModuleConfig: wazero.NewModuleConfig(),
 			}
 			plugin, err := extism.NewPlugin(ctx, mft, config, []extism.HostFunction{})
 			if err != nil {
 				return err
 			}
-
-			_, exposes, err := plugin.Call("exposes", make([]byte, 0))
-			if err != nil {
-				return nil
-			}
-
-			var funcKeys []string
-			if err := json.Unmarshal(exposes, &funcKeys); err == nil {
-				for _, key := range funcKeys {
-					funcs[fmt.Sprintf("%s__%s", name, key)] = func(data string) string {
-						_, out, err := plugin.Call(key, []byte(data))
-						if err != nil {
-							return ""
-						}
-						return string(out)
-					}
-				}
-			}
-
+			plugins[name] = plugin
 			return nil
 		})
 	}
@@ -255,7 +227,17 @@ func (r *Reader) LoadPlugin(ctx context.Context, node Node) error {
 	if err != nil {
 		return err
 	}
-	templater.TemplateFuncsCopy(&funcs)
+	templater.ExposePluginCall(func(name, funcName string, input string) any {
+		plugin, ok := plugins[name]
+		if !ok {
+			return ""
+		}
+		_, out, err := plugin.Call(funcName, []byte(input))
+		if err != nil {
+			return ""
+		}
+		return string(out)
+	})
 	return nil
 }
 

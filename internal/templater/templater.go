@@ -149,6 +149,6 @@ func ReplaceVarsWithExtra(vars *ast.Vars, cache *Cache, extra map[string]any) *a
 	return newVars
 }
 
-func TemplateFuncsCopy(m *template.FuncMap) {
-	maps.Copy(templateFuncs, *m)
+func ExposePluginCall(call func(name string, funcName string, input string) any) {
+	templateFuncs["plugin"] = call
 }
