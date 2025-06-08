@@ -10,11 +10,19 @@ import (
 
 	"github.com/elliotchance/orderedmap/v3"
 	"github.com/go-task/task/v3/errors"
+	"github.com/go-task/task/v3/internal/deepcopy"
 )
 
 type (
 	Plugin struct {
-		File string
+		File         string
+		AllowedPaths map[string]string
+		SysNanosleep bool
+		SysNanotime  bool
+		SysWalltime  bool
+		Rand         bool
+		Stderr       bool
+		Stdout       bool
 	}
 	Plugins struct {
 		om    *orderedmap.OrderedMap[string, *Plugin]
@@ -106,12 +114,12 @@ func (plugins *Plugins) UnmarshalYAML(node *yaml.Node) error {
 			keyNode := node.Content[i]
 			valueNode := node.Content[i+1]
 
-			var v *Plugin
+			var v Plugin
 			if err := valueNode.Decode(&v); err != nil {
 				return errors.NewTaskfileDecodeError(err, node)
 			}
 
-			plugins.Set(keyNode.Value, v)
+			plugins.Set(keyNode.Value, &v)
 		}
 		return nil
 	}
@@ -131,12 +139,26 @@ func (plugin *Plugin) UnmarshalYAML(node *yaml.Node) error {
 
 	case yaml.MappingNode:
 		var v struct {
-			File string
+			File         string
+			AllowedPaths map[string]string `yaml:"allowedPaths"`
+			SysNanosleep bool              `yaml:"sysNanosleep"`
+			SysNanotime  bool              `yaml:"sysNanotime"`
+			SysWalltime  bool              `yaml:"sysWalltime"`
+			Rand         bool
+			Stderr       bool
+			Stdout       bool
 		}
 		if err := node.Decode(&v); err != nil {
 			return errors.NewTaskfileDecodeError(err, node)
 		}
 		plugin.File = v.File
+		plugin.AllowedPaths = v.AllowedPaths
+		plugin.SysNanosleep = v.SysNanosleep
+		plugin.SysNanotime = v.SysNanotime
+		plugin.SysWalltime = v.SysWalltime
+		plugin.Rand = v.Rand
+		plugin.Stderr = v.Stderr
+		plugin.Stdout = v.Stdout
 		return nil
 	}
 
@@ -148,6 +170,13 @@ func (plugin *Plugin) DeepCopy() *Plugin {
 		return nil
 	}
 	return &Plugin{
-		File: plugin.File,
+		File:         plugin.File,
+		AllowedPaths: deepcopy.Map(plugin.AllowedPaths),
+		SysNanosleep: plugin.SysNanosleep,
+		SysNanotime:  plugin.SysNanotime,
+		SysWalltime:  plugin.SysWalltime,
+		Rand:         plugin.Rand,
+		Stderr:       plugin.Stderr,
+		Stdout:       plugin.Stdout,
 	}
 }

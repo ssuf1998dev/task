@@ -32,6 +32,33 @@ b:
 		},
 		{
 			`
+a:
+  file: a.wasm
+  allowedPaths:
+    data: /mnt
+  sysNanosleep: true
+  sysNanotime: true
+  sysWalltime: true
+  rand: true
+  stderr: true
+  stdout: true
+`,
+			&ast.Plugins{},
+			ast.NewPlugins(
+				&ast.PluginElement{Key: "a", Value: &ast.Plugin{
+					File:         "a.wasm",
+					AllowedPaths: map[string]string{"data": "/mnt"},
+					SysNanosleep: true,
+					SysNanotime:  true,
+					SysWalltime:  true,
+					Rand:         true,
+					Stderr:       true,
+					Stdout:       true,
+				}},
+			),
+		},
+		{
+			`
 - a.wasm
 - b.wasm
 `,

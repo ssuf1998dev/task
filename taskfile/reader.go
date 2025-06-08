@@ -2,6 +2,7 @@ package taskfile
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -209,12 +210,34 @@ func (r *Reader) LoadPlugin(ctx context.Context, node Node) error {
 	for name, value := range tf.Plugins.All() {
 		g.Go(func() error {
 			mft := extism.Manifest{
-				Wasm: []extism.Wasm{extism.WasmFile{Path: filepath.Join(node.Dir(), value.File), Name: name}},
+				AllowedPaths: value.AllowedPaths,
+				Wasm:         []extism.Wasm{extism.WasmFile{Path: filepath.Join(node.Dir(), value.File), Name: name}},
+			}
+
+			var moduleConfig = wazero.NewModuleConfig()
+			if value.SysNanosleep {
+				moduleConfig = moduleConfig.WithSysNanosleep()
+			}
+			if value.SysNanotime {
+				moduleConfig = moduleConfig.WithSysNanotime()
+			}
+			if value.SysWalltime {
+				moduleConfig = moduleConfig.WithSysWalltime()
+			}
+			if value.Rand {
+				moduleConfig = moduleConfig.WithRandSource(rand.Reader)
+			}
+			if value.Stderr {
+				moduleConfig = moduleConfig.WithStderr(os.Stderr)
+			}
+			if value.Stdout {
+				moduleConfig = moduleConfig.WithStderr(os.Stdout)
 			}
 			config := extism.PluginConfig{
 				EnableWasi:   true,
-				ModuleConfig: wazero.NewModuleConfig(),
+				ModuleConfig: moduleConfig,
 			}
+
 			plugin, err := extism.NewPlugin(ctx, mft, config, []extism.HostFunction{})
 			if err != nil {
 				return err
