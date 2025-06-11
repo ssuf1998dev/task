@@ -1360,6 +1360,8 @@ func TestIncludesUnshadowedDefault(t *testing.T) {
 }
 
 func TestPlugins(t *testing.T) {
+	enableExperimentForTest(t, &experiments.Plugins, 1)
+
 	t.Parallel()
 
 	tt := fileContentTest{

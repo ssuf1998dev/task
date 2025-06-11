@@ -13,6 +13,7 @@ import (
 	"github.com/sajari/fuzzy"
 
 	"github.com/go-task/task/v3/errors"
+	"github.com/go-task/task/v3/experiments"
 	"github.com/go-task/task/v3/internal/env"
 	"github.com/go-task/task/v3/internal/execext"
 	"github.com/go-task/task/v3/internal/filepathext"
@@ -82,7 +83,9 @@ func (e *Executor) readTaskfile(node taskfile.Node) error {
 		taskfile.WithPromptFunc(promptFunc),
 	)
 	graph, err := reader.Read(ctx, node)
-	reader.LoadPlugin(ctx, node)
+	if experiments.Plugins.Enabled() {
+		reader.LoadPlugin(ctx, node)
+	}
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return &errors.TaskfileNetworkTimeoutError{URI: node.Location(), Timeout: e.Timeout}
