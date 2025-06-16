@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"encoding/json"
 	"iter"
 	"path/filepath"
 	"strings"
@@ -16,10 +17,10 @@ import (
 type (
 	Plugin struct {
 		File         string
-		AllowedPaths map[string]string
-		SysNanosleep bool
-		SysNanotime  bool
-		SysWalltime  bool
+		AllowedPaths map[string]string `yaml:"allowedPaths"`
+		SysNanosleep bool              `yaml:"sysNanosleep"`
+		SysNanotime  bool              `yaml:"sysNanotime"`
+		SysWalltime  bool              `yaml:"sysWalltime"`
 		Rand         bool
 		Stderr       bool
 		Stdout       bool
@@ -99,14 +100,25 @@ func (plugins *Plugins) UnmarshalYAML(node *yaml.Node) error {
 
 	switch node.Kind {
 	case yaml.SequenceNode:
-		var list []string
+		var list []any
 		if err := node.Decode(&list); err != nil {
 			return errors.NewTaskfileDecodeError(err, node)
 		}
-		for _, v := range list {
-			fn := filepath.Base(v)
-			name := strings.TrimSuffix(fn, filepath.Ext(fn))
-			plugins.Set(name, &Plugin{File: v})
+		for _, item := range list {
+			switch v := item.(type) {
+			case string:
+				fn := filepath.Base(v)
+				name := strings.TrimSuffix(fn, filepath.Ext(fn))
+				plugins.Set(name, &Plugin{File: v})
+			default:
+				marshalled, _ := json.Marshal(v)
+				var unmarshalled Plugin
+				if err := json.Unmarshal(marshalled, &unmarshalled); err == nil {
+					fn := filepath.Base(unmarshalled.File)
+					name := strings.TrimSuffix(fn, filepath.Ext(fn))
+					plugins.Set(name, &unmarshalled)
+				}
+			}
 		}
 		return nil
 	case yaml.MappingNode:

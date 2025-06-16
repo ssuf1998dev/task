@@ -68,6 +68,17 @@ a:
 				&ast.PluginElement{Key: "b", Value: &ast.Plugin{File: "b.wasm"}},
 			),
 		},
+		{
+			`
+- file: a.wasm
+- file: b.wasm
+`,
+			&ast.Plugins{},
+			ast.NewPlugins(
+				&ast.PluginElement{Key: "a", Value: &ast.Plugin{File: "a.wasm"}},
+				&ast.PluginElement{Key: "b", Value: &ast.Plugin{File: "b.wasm"}},
+			),
+		},
 	}
 	for _, test := range tests {
 		err := yaml.Unmarshal([]byte(test.content), test.v)
