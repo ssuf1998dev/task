@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 includes:
   website:
@@ -10,7 +10,7 @@ vars:
   BIN: "{{.ROOT_DIR}}/bin"
 
 env:
-  CGO_ENABLED: '0'
+  CGO_ENABLED: "0"
 
 tasks:
   default:
@@ -27,7 +27,7 @@ tasks:
     desc: Installs Task
     aliases: [i]
     sources:
-      - './**/*.go'
+      - "./**/*.go"
     cmds:
       - go install -v ./cmd/task
 
@@ -85,7 +85,7 @@ tasks:
     desc: Runs golangci-lint
     aliases: [l]
     sources:
-      - './**/*.go'
+      - "./**/*.go"
       - .golangci.yml
     cmds:
       - golangci-lint run
@@ -93,7 +93,7 @@ tasks:
   lint:fix:
     desc: Runs golangci-lint and fixes any issues
     sources:
-      - './**/*.go'
+      - "./**/*.go"
       - .golangci.yml
     cmds:
       - golangci-lint run --fix
@@ -102,7 +102,7 @@ tasks:
     desc: Runs golangci-lint and formats any Go files
     aliases: [fmt, f]
     sources:
-      - './**/*.go'
+      - "./**/*.go"
       - .golangci.yml
     cmds:
       - golangci-lint fmt
@@ -222,3 +222,17 @@ tasks:
     desc: Publish release to npm
     cmds:
       - npm publish --access=public
+
+  interpreter:civet:
+    desc: Build civet for interpreting.
+    dir: internal/interpreter/civet/Civet
+    cmds:
+      - git submodule init
+      - git submodule update
+      - git apply ../build.patch
+      - yarn install
+      - yarn build
+    preconditions:
+      - command -v node
+      - command -v yarn
+      - command -v git

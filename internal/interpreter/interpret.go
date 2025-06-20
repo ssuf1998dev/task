@@ -10,7 +10,7 @@ import (
 	"github.com/buke/quickjs-go"
 )
 
-//go:embed civet.mjs
+//go:embed civet/Civet/dist/quickjs.mjs
 var civetJs string
 
 var ErrNilOptions = errors.New("interpreter: nil options given")
