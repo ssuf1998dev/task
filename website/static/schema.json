@@ -12,6 +12,10 @@
         "type": "string"
       }
     },
+    "interpreter": {
+      "type": "string",
+      "enum": ["sh", "js", "javascript", "civet"]
+    },
     "tasks": {
       "type": "object",
       "patternProperties": {
@@ -354,6 +358,10 @@
         "platforms": {
           "description": "Specifies which platforms the command should be run on.",
           "$ref": "#/definitions/platforms"
+        },
+        "interpreter": {
+          "description": "Customise interpreter that executes commands.",
+          "$ref": "#/definitions/interpreter"
         }
       },
       "additionalProperties": false,
