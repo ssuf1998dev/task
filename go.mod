@@ -6,6 +6,7 @@ require (
 	github.com/Ladicle/tabwriter v1.0.0
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/alecthomas/chroma/v2 v2.18.0
+	github.com/buke/quickjs-go v0.5.10
 	github.com/chainguard-dev/git-urls v1.0.2
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dominikbraun/graph v0.23.0
