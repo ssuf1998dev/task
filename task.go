@@ -345,12 +345,12 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		}
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
 
-		switch (func() string {
-			if experiments.CmdInterpreter.Enabled() {
-				return cmd.Interpreter
-			}
-			return "sh"
-		})() {
+		var intp = "sh"
+		if experiments.Interpreter.Enabled() {
+			intp = cmd.Interpreter
+		}
+
+		switch intp {
 		case "javascript", "js", "civet":
 			err = interpreter.InterpretJS(&interpreter.InterpretJSOptions{
 				Script:  cmd.Cmd,

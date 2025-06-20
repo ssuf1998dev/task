@@ -1862,7 +1862,7 @@ task-1 ran successfully
 }
 
 func TestInterpreterCmds(t *testing.T) {
-	enableExperimentForTest(t, &experiments.CmdInterpreter, 1)
+	enableExperimentForTest(t, &experiments.Interpreter, 1)
 
 	t.Parallel()
 
@@ -1900,6 +1900,34 @@ task: [civet] return 1 + 2
 3
 task: [civet] return [1,2,3] |> .map & * 2
 [2,4,6]`)
+	assert.Contains(t, buff.String(), output)
+}
+
+func TestInterpreterVars(t *testing.T) {
+	enableExperimentForTest(t, &experiments.Interpreter, 1)
+
+	t.Parallel()
+
+	const dir = "testdata/interpreter"
+	var buff bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir(dir),
+		task.WithStdout(&buff),
+		task.WithStderr(&buff),
+	)
+	require.NoError(t, e.Setup())
+
+	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "var-js"}))
+	var output = strings.TrimSpace(`
+task: [var-js] echo 3
+3`)
+	assert.Contains(t, buff.String(), output)
+
+	buff.Reset()
+	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "var-civet"}))
+	output = strings.TrimSpace(`
+task: [var-civet] echo 6
+6`)
 	assert.Contains(t, buff.String(), output)
 }
 

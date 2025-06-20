@@ -296,6 +296,10 @@
           "type": "string",
           "description": "The value will be treated as a command and the output assigned to the variable"
         },
+        "interpreter": {
+          "description": "Customise interpreter that executes commands.",
+          "$ref": "#/definitions/interpreter"
+        },
         "ref": {
           "type": "string",
           "description": "The value will be used to lookup the value of another variable which will then be assigned to this variable"

@@ -8,11 +8,12 @@ import (
 
 // Var represents either a static or dynamic variable.
 type Var struct {
-	Value any
-	Live  any
-	Sh    *string
-	Ref   string
-	Dir   string
+	Value       any
+	Live        any
+	Sh          *string
+	Interpreter string
+	Ref         string
+	Dir         string
 }
 
 func (v *Var) UnmarshalYAML(node *yaml.Node) error {
@@ -22,14 +23,16 @@ func (v *Var) UnmarshalYAML(node *yaml.Node) error {
 		switch key {
 		case "sh", "ref", "map":
 			var m struct {
-				Sh  *string
-				Ref string
-				Map any
+				Sh          *string
+				Interpreter string
+				Ref         string
+				Map         any
 			}
 			if err := node.Decode(&m); err != nil {
 				return errors.NewTaskfileDecodeError(err, node)
 			}
 			v.Sh = m.Sh
+			v.Interpreter = m.Interpreter
 			v.Ref = m.Ref
 			v.Value = m.Map
 			return nil

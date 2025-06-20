@@ -35,3 +35,19 @@ tasks:
 
       - cmd: "return [1,2,3] |> .map & * 2"
         interpreter: "civet"
+
+  var-js:
+    vars:
+      SUM:
+        sh: return 1 + 2
+        interpreter: "javascript"
+
+    cmd: echo {{.SUM}}
+
+  var-civet:
+    vars:
+      SUM:
+        sh: return [1,2,3].reduce (+)
+        interpreter: "civet"
+
+    cmd: echo {{.SUM}}
