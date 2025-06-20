@@ -9,9 +9,11 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/go-task/task/v3/experiments"
 	"github.com/go-task/task/v3/internal/env"
 	"github.com/go-task/task/v3/internal/execext"
 	"github.com/go-task/task/v3/internal/filepathext"
+	"github.com/go-task/task/v3/internal/interpreter"
 	"github.com/go-task/task/v3/internal/logger"
 	"github.com/go-task/task/v3/internal/templater"
 	"github.com/go-task/task/v3/internal/version"
@@ -165,16 +167,41 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, 
 		dir = v.Dir
 	}
 
-	var stdout bytes.Buffer
-	opts := &execext.RunCommandOptions{
-		Command: *v.Sh,
-		Dir:     dir,
-		Stdout:  &stdout,
-		Stderr:  c.Logger.Stderr,
-		Env:     e,
+	var intp = "sh"
+	if experiments.Interpreter.Enabled() {
+		intp = v.Interpreter
 	}
-	if err := execext.RunCommand(context.Background(), opts); err != nil {
-		return "", fmt.Errorf(`task: Command "%s" failed: %s`, opts.Command, err)
+
+	var stdout bytes.Buffer
+	switch intp {
+	case "javascript", "js", "civet":
+		env := map[string]string{}
+		for _, v := range e {
+			parts := strings.Split(v, "=")
+			env[parts[0]] = parts[1]
+		}
+		opts := &interpreter.InterpretJSOptions{
+			Script:  *v.Sh,
+			Dialect: intp,
+			Dir:     dir,
+			Env:     env,
+			Stdout:  &stdout,
+			Stderr:  c.Logger.Stderr,
+		}
+		if err := interpreter.InterpretJS(opts); err != nil {
+			return "", fmt.Errorf(`task: Script "%s" failed: %s`, opts.Script, err)
+		}
+	default:
+		opts := &execext.RunCommandOptions{
+			Command: *v.Sh,
+			Dir:     dir,
+			Stdout:  &stdout,
+			Stderr:  c.Logger.Stderr,
+			Env:     e,
+		}
+		if err := execext.RunCommand(context.Background(), opts); err != nil {
+			return "", fmt.Errorf(`task: Command "%s" failed: %s`, opts.Command, err)
+		}
 	}
 
 	// Trim a single trailing newline from the result to make most command
