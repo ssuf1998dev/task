@@ -226,12 +226,13 @@ tasks:
   interpreter:civet:
     desc: Build civet for interpreting.
     dir: internal/interpreter/civet
-    cmds:
-      - git submodule init
-      - git submodule update
-      - cd Civet && git apply ../build.patch
-      - cd Civet && yarn install
-      - cd Civet && yarn build
+    cmd: |
+      git submodule init
+      git submodule update
+      cd Civet
+      git apply ../build.patch
+      yarn install
+      yarn build
     preconditions:
       - command -v node
       - command -v yarn
