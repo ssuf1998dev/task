@@ -31,6 +31,14 @@ func Get(t *ast.Task) []string {
 	return GetFromVars(t.Env)
 }
 
+func GetMap(t *ast.Task) map[string]string {
+	if t.Env == nil {
+		return nil
+	}
+
+	return GetMapFromVars(t.Env)
+}
+
 func GetFromVars(env *ast.Vars) []string {
 	environ := os.Environ()
 
@@ -47,6 +55,29 @@ func GetFromVars(env *ast.Vars) []string {
 	}
 
 	return environ
+}
+
+func GetMapFromVars(env *ast.Vars) map[string]string {
+	m := map[string]string{}
+
+	for k, v := range env.ToCacheMap() {
+		if !isTypeAllowed(v) {
+			continue
+		}
+		if !experiments.EnvPrecedence.Enabled() {
+			if _, alreadySet := os.LookupEnv(k); alreadySet {
+				continue
+			}
+		}
+		m[k] = v.(string)
+	}
+
+	for _, e := range os.Environ() {
+		parts := strings.SplitN(e, "=", 2)
+		m[parts[0]] = parts[1]
+	}
+
+	return m
 }
 
 func isTypeAllowed(v any) bool {

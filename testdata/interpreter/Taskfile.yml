@@ -1,0 +1,28 @@
+version: "3"
+
+tasks:
+  js:
+    vars:
+      A: "a"
+
+    env:
+      B: "b"
+      C: "c"
+
+    cmds:
+      - cmd: return 1 + 2;
+        interpreter: "javascript"
+
+      - cmd: |
+          var hello = 'world';
+          return hello;
+        interpreter: "javascript"
+
+      - cmd: |
+          var A = '{{.A}}';
+          return A;
+        interpreter: "javascript"
+
+      - cmd: |
+          return process.env.B + process.env.C;
+        interpreter: "js"
