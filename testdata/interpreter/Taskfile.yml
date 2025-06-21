@@ -26,3 +26,11 @@ tasks:
       - cmd: |
           return process.env.B + process.env.C;
         interpreter: "js"
+
+  var-js:
+    vars:
+      SUM:
+        sh: return 1 + 2
+        interpreter: "javascript"
+
+    cmd: echo {{.SUM}}
