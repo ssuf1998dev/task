@@ -233,6 +233,7 @@ tasks:
       git apply ../build.patch
       yarn install
       yarn build
+      yarn terser dist/quickjs.mjs --compress --mangle --ecma 2015 --output dist/quickjs.min.mjs
     preconditions:
       - command -v node
       - command -v yarn
