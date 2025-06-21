@@ -1,4 +1,3 @@
-# yaml-language-server: $schema=../../website/static/schema.json
 version: "3"
 
 tasks:
