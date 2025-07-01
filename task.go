@@ -352,7 +352,10 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 
 		switch intp {
 		case "javascript", "js", "civet":
-			err = interpreter.InterpretJS(&interpreter.InterpretJSOptions{
+			if e.jsInterpreter == nil {
+				e.jsInterpreter = interpreter.NewJSInterpreter()
+			}
+			err = e.jsInterpreter.Interpret(&interpreter.InterpretJSOptions{
 				Script:  cmd.Cmd,
 				Dialect: cmd.Interpreter,
 				Dir:     t.Dir,
