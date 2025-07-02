@@ -118,8 +118,16 @@ func (e *Executor) splitRegularAndWatchCalls(calls ...*Call) (regularCalls []*Ca
 	return
 }
 
+func (e *Executor) runTaskCleanup() {
+	if e.jsInterpreter != nil {
+		e.jsInterpreter.Close()
+		e.jsInterpreter = nil
+	}
+}
+
 // RunTask runs a task by its name
 func (e *Executor) RunTask(ctx context.Context, call *Call) error {
+	defer e.runTaskCleanup()
 	t, err := e.FastCompiledTask(call)
 	if err != nil {
 		return err

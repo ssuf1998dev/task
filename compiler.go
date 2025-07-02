@@ -148,9 +148,17 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 	return result, nil
 }
 
+func (c *Compiler) handleDynamicVarCleanup() {
+	if c.jsInterpreter != nil {
+		c.jsInterpreter.Close()
+		c.jsInterpreter = nil
+	}
+}
+
 func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, error) {
 	c.muDynamicCache.Lock()
 	defer c.muDynamicCache.Unlock()
+	defer c.handleDynamicVarCleanup()
 
 	// If the variable is not dynamic or it is empty, return an empty string
 	if v.Sh == nil || *v.Sh == "" {
