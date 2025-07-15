@@ -149,6 +149,6 @@ func ReplaceVarsWithExtra(vars *ast.Vars, cache *Cache, extra map[string]any) *a
 	return newVars
 }
 
-func ExposePluginCall(call func(name string, funcName string, input string) any) {
-	templateFuncs["plugin"] = call
+func ExposePluginFuncCall(name string, call func(input string) any) {
+	templateFuncs[name] = call
 }

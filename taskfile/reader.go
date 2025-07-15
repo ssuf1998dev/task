@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 	"time"
 
@@ -250,17 +251,22 @@ func (r *Reader) LoadPlugin(ctx context.Context, node Node) error {
 	if err != nil {
 		return err
 	}
-	templater.ExposePluginCall(func(name, funcName string, input string) any {
-		plugin, ok := plugins[name]
-		if !ok {
-			return ""
+	for pluginName, plugin := range plugins {
+		for pluginFuncName := range plugin.Module().ExportedFunctions() {
+			if slices.Contains([]string{"_initialize", "calloc", "free", "malloc", "realloc"}, pluginFuncName) {
+				continue
+			}
+
+			name := fmt.Sprintf("%s_%s", pluginName, pluginFuncName)
+			templater.ExposePluginFuncCall(name, func(input string) any {
+				if _, out, err := plugin.Call(pluginFuncName, []byte(input)); err != nil {
+					return ""
+				} else {
+					return string(out)
+				}
+			})
 		}
-		_, out, err := plugin.Call(funcName, []byte(input))
-		if err != nil {
-			return ""
-		}
-		return string(out)
-	})
+	}
 	return nil
 }
 
