@@ -18,8 +18,10 @@ import (
 	"github.com/go-task/template"
 )
 
-var templateFuncs template.FuncMap
-var templatePluginFuncsSync sync.Map
+var (
+	templateFuncs           template.FuncMap
+	templatePluginFuncsSync sync.Map
+)
 
 func init() {
 	taskFuncs := template.FuncMap{

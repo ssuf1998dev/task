@@ -84,7 +84,9 @@ func (e *Executor) readTaskfile(node taskfile.Node) error {
 	)
 	graph, err := reader.Read(ctx, node)
 	if experiments.Plugins.Enabled() {
-		reader.LoadPlugin(ctx, node)
+		if err := reader.LoadPlugin(ctx, node); err != nil {
+			return err
+		}
 	}
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
