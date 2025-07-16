@@ -12,6 +12,22 @@
         "type": "string"
       }
     },
+    "plugin": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "file": {
+              "description": "The path for loading plugin. If a relative path, resolved relative to the directory containing the including Taskfile.",
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
     "tasks": {
       "type": "object",
       "patternProperties": {
@@ -694,6 +710,25 @@
               ]
             }
           }
+        },
+        "plugins": {
+          "description": "Loads plugins from the specified files, which will provide some custom functions prefixed with plugin name.",
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/plugin"
+              }
+            },
+            {
+              "type": "object",
+              "patternProperties": {
+                "^.*$": {
+                  "$ref": "#/definitions/plugin"
+                }
+              }
+            }
+          ]
         },
         "vars": {
           "description": "A set of global variables.",
