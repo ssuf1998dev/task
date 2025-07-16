@@ -206,50 +206,43 @@ func (r *Reader) LoadPlugin(ctx context.Context, node Node) error {
 		return err
 	}
 
-	var g errgroup.Group
-	plugins := make(map[string]*extism.Plugin)
+	plugins := map[string]*extism.Plugin{}
 	for name, value := range tf.Plugins.All() {
-		g.Go(func() error {
-			mft := extism.Manifest{
-				AllowedPaths: value.AllowedPaths,
-				Wasm:         []extism.Wasm{extism.WasmFile{Path: filepath.Join(node.Dir(), value.File), Name: name}},
-			}
 
-			var moduleConfig = wazero.NewModuleConfig()
-			if value.SysNanosleep {
-				moduleConfig = moduleConfig.WithSysNanosleep()
-			}
-			if value.SysNanotime {
-				moduleConfig = moduleConfig.WithSysNanotime()
-			}
-			if value.SysWalltime {
-				moduleConfig = moduleConfig.WithSysWalltime()
-			}
-			if value.Rand {
-				moduleConfig = moduleConfig.WithRandSource(rand.Reader)
-			}
-			if value.Stderr {
-				moduleConfig = moduleConfig.WithStderr(os.Stderr)
-			}
-			if value.Stdout {
-				moduleConfig = moduleConfig.WithStderr(os.Stdout)
-			}
-			config := extism.PluginConfig{
-				EnableWasi:   true,
-				ModuleConfig: moduleConfig,
-			}
+		mft := extism.Manifest{
+			AllowedPaths: value.AllowedPaths,
+			Wasm:         []extism.Wasm{extism.WasmFile{Path: filepath.Join(node.Dir(), value.File), Name: name}},
+		}
 
-			plugin, err := extism.NewPlugin(ctx, mft, config, []extism.HostFunction{})
-			if err != nil {
-				return err
-			}
-			plugins[name] = plugin
-			return nil
-		})
-	}
-	err = g.Wait()
-	if err != nil {
-		return err
+		var moduleConfig = wazero.NewModuleConfig()
+		if value.SysNanosleep {
+			moduleConfig = moduleConfig.WithSysNanosleep()
+		}
+		if value.SysNanotime {
+			moduleConfig = moduleConfig.WithSysNanotime()
+		}
+		if value.SysWalltime {
+			moduleConfig = moduleConfig.WithSysWalltime()
+		}
+		if value.Rand {
+			moduleConfig = moduleConfig.WithRandSource(rand.Reader)
+		}
+		if value.Stderr {
+			moduleConfig = moduleConfig.WithStderr(os.Stderr)
+		}
+		if value.Stdout {
+			moduleConfig = moduleConfig.WithStderr(os.Stdout)
+		}
+		config := extism.PluginConfig{
+			EnableWasi:   true,
+			ModuleConfig: moduleConfig,
+		}
+
+		plugin, err := extism.NewPlugin(ctx, mft, config, []extism.HostFunction{})
+		if err != nil {
+			return err
+		}
+		plugins[name] = plugin
 	}
 	for pluginName, plugin := range plugins {
 		for pluginFuncName := range plugin.Module().ExportedFunctions() {
@@ -258,7 +251,7 @@ func (r *Reader) LoadPlugin(ctx context.Context, node Node) error {
 			}
 
 			name := fmt.Sprintf("%s_%s", pluginName, pluginFuncName)
-			templater.ExposePluginFuncCall(name, func(input string) any {
+			templater.ExposePluginFunc(name, func(input string) any {
 				if _, out, err := plugin.Call(pluginFuncName, []byte(input)); err != nil {
 					return ""
 				} else {

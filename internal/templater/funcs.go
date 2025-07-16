@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
@@ -18,6 +19,7 @@ import (
 )
 
 var templateFuncs template.FuncMap
+var templatePluginFuncsSync sync.Map
 
 func init() {
 	taskFuncs := template.FuncMap{
