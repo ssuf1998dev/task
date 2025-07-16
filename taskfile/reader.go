@@ -214,7 +214,7 @@ func (r *Reader) LoadPlugin(ctx context.Context, node Node) error {
 			Wasm:         []extism.Wasm{extism.WasmFile{Path: filepath.Join(node.Dir(), value.File), Name: name}},
 		}
 
-		var moduleConfig = wazero.NewModuleConfig()
+		moduleConfig := wazero.NewModuleConfig()
 		if value.SysNanosleep {
 			moduleConfig = moduleConfig.WithSysNanosleep()
 		}
