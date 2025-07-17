@@ -40,11 +40,11 @@ func NewQuickJSInterpreter() (*QuickJSInterpreter, error) {
     globalThis.clearTimeout = clearTimeout;
     `
 
-	compiled := libquickjs.XJS_Eval(tls, ctx, lo.Must(libc.CString(code)), libc.Tsize_t(len(code)), lo.Must(libc.CString("init.js")), libquickjs.MJS_EVAL_TYPE_MODULE|libquickjs.MJS_EVAL_FLAG_COMPILE_ONLY)
+	compiled := libquickjs.XJS_Eval(tls, ctx, lo.Must(libc.CString(code)), libquickjs.Tsize_t(len(code)), lo.Must(libc.CString("init.js")), libquickjs.MJS_EVAL_TYPE_MODULE|libquickjs.MJS_EVAL_FLAG_COMPILE_ONLY)
 	ran := libquickjs.Xjs_std_await(tls, ctx, libquickjs.XJS_EvalFunction(tls, ctx, compiled))
 	libquickjs.XFreeValue(tls, ctx, ran)
 
-	libquickjs.XJS_SetMemoryLimit(tls, rt, libc.Tsize_t(32*1024*1024))
+	libquickjs.XJS_SetMemoryLimit(tls, rt, libquickjs.Tsize_t(32*1024*1024))
 
 	result := &QuickJSInterpreter{
 		tls: tls,
@@ -148,15 +148,15 @@ func (i *QuickJSInterpreter) Eval(code string, opts ...QJSEvalOption) libquickjs
 	filenamePtr := lo.Must(libc.CString(options.filename))
 	defer libc.Xfree(i.tls, filenamePtr)
 
-	if libquickjs.XJS_DetectModule(i.tls, codePtr, libc.Tsize_t(len(code))) != 0 {
+	if libquickjs.XJS_DetectModule(i.tls, codePtr, libquickjs.Tsize_t(len(code))) != 0 {
 		flag |= libquickjs.MJS_EVAL_TYPE_MODULE
 	}
 
 	var val libquickjs.TJSValue
 	if options.await {
-		val = libquickjs.Xjs_std_await(i.tls, i.ctx, libquickjs.XJS_Eval(i.tls, i.ctx, codePtr, libc.Tsize_t(len(code)), filenamePtr, int32(flag)))
+		val = libquickjs.Xjs_std_await(i.tls, i.ctx, libquickjs.XJS_Eval(i.tls, i.ctx, codePtr, libquickjs.Tsize_t(len(code)), filenamePtr, int32(flag)))
 	} else {
-		val = libquickjs.XJS_Eval(i.tls, i.ctx, codePtr, libc.Tsize_t(len(code)), filenamePtr, int32(flag))
+		val = libquickjs.XJS_Eval(i.tls, i.ctx, codePtr, libquickjs.Tsize_t(len(code)), filenamePtr, int32(flag))
 	}
 
 	return val
@@ -178,7 +178,7 @@ func (i *QuickJSInterpreter) ProcessEnv(env map[string]string) {
 			i.ctx,
 			processEnv,
 			kPtr,
-			libquickjs.XJS_NewStringLen(i.tls, i.ctx, vPtr, libc.Tsize_t(len(v))),
+			libquickjs.XJS_NewStringLen(i.tls, i.ctx, vPtr, libquickjs.Tsize_t(len(v))),
 		)
 	}
 
@@ -202,7 +202,7 @@ func (i *QuickJSInterpreter) LoadModule(code string, moduleName string, opts ...
 	ptr := lo.Must(libc.CString(code))
 	defer libc.Xfree(i.tls, ptr)
 
-	if libquickjs.XJS_DetectModule(i.tls, ptr, libc.Tsize_t(len(code))) == 0 {
+	if libquickjs.XJS_DetectModule(i.tls, ptr, libquickjs.Tsize_t(len(code))) == 0 {
 		msgPtr := lo.Must(libc.CString(fmt.Sprintf("not a module: %s", moduleName)))
 		defer libc.Xfree(i.tls, msgPtr)
 		return libquickjs.XJS_ThrowSyntaxError(i.tls, i.ctx, msgPtr, 0)
@@ -229,7 +229,7 @@ func (i *QuickJSInterpreter) LoadModuleBytecode(buf []byte, opts ...QJSEvalOptio
 		i.tls,
 		i.ctx,
 		uintptr(unsafe.Pointer(&buf[0])),
-		libc.Tsize_t(len(buf)),
+		libquickjs.Tsize_t(len(buf)),
 		libc.Int32(libquickjs.MJS_READ_OBJ_BYTECODE),
 	)
 
