@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- Compatible with prerelease version for forking
+- Compatible with prerelease version for forking.
+- Plugins support with [extism](https://github.com/extism).
 
 ## v3.44.0 - 2025-06-08
 

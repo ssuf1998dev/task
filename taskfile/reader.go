@@ -2,12 +2,17 @@ package taskfile
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"os"
+	"path/filepath"
+	"slices"
 	"sync"
 	"time"
 
 	"github.com/dominikbraun/graph"
+	extism "github.com/extism/go-sdk"
+	"github.com/tetratelabs/wazero"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 
@@ -191,6 +196,71 @@ func (r *Reader) Read(ctx context.Context, node Node) (*ast.TaskfileGraph, error
 		return nil, err
 	}
 	return r.graph, nil
+}
+
+func (r *Reader) LoadPlugin(ctx context.Context, node Node) error {
+	var tf *ast.Taskfile
+	var err error
+	tf, err = r.readNode(ctx, node)
+	if err != nil {
+		return err
+	}
+
+	plugins := map[string]*extism.Plugin{}
+	for name, value := range tf.Plugins.All() {
+
+		mft := extism.Manifest{
+			AllowedPaths: value.AllowedPaths,
+			Wasm:         []extism.Wasm{extism.WasmFile{Path: filepath.Join(node.Dir(), value.File), Name: name}},
+		}
+
+		moduleConfig := wazero.NewModuleConfig()
+		if value.SysNanosleep {
+			moduleConfig = moduleConfig.WithSysNanosleep()
+		}
+		if value.SysNanotime {
+			moduleConfig = moduleConfig.WithSysNanotime()
+		}
+		if value.SysWalltime {
+			moduleConfig = moduleConfig.WithSysWalltime()
+		}
+		if value.Rand {
+			moduleConfig = moduleConfig.WithRandSource(rand.Reader)
+		}
+		if value.Stderr {
+			moduleConfig = moduleConfig.WithStderr(os.Stderr)
+		}
+		if value.Stdout {
+			moduleConfig = moduleConfig.WithStderr(os.Stdout)
+		}
+		config := extism.PluginConfig{
+			EnableWasi:   true,
+			ModuleConfig: moduleConfig,
+		}
+
+		plugin, err := extism.NewPlugin(ctx, mft, config, []extism.HostFunction{})
+		if err != nil {
+			return err
+		}
+		plugins[name] = plugin
+	}
+	for pluginName, plugin := range plugins {
+		for pluginFuncName := range plugin.Module().ExportedFunctions() {
+			if slices.Contains([]string{"_initialize", "calloc", "free", "malloc", "realloc"}, pluginFuncName) {
+				continue
+			}
+
+			name := fmt.Sprintf("%s_%s", pluginName, pluginFuncName)
+			templater.ExposePluginFunc(name, func(input string) any {
+				if _, out, err := plugin.Call(pluginFuncName, []byte(input)); err != nil {
+					return ""
+				} else {
+					return string(out)
+				}
+			})
+		}
+	}
+	return nil
 }
 
 func (r *Reader) debugf(format string, a ...any) {

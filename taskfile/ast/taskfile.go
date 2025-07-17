@@ -25,6 +25,7 @@ type Taskfile struct {
 	Output   Output
 	Method   string
 	Includes *Includes
+	Plugins  *Plugins
 	Set      []string
 	Shopt    []string
 	Vars     *Vars
@@ -50,6 +51,9 @@ func (t1 *Taskfile) Merge(t2 *Taskfile, include *Include) error {
 	if t1.Includes == nil {
 		t1.Includes = NewIncludes()
 	}
+	if t1.Plugins == nil {
+		t1.Plugins = NewPlugins()
+	}
 	if t1.Vars == nil {
 		t1.Vars = NewVars()
 	}
@@ -72,6 +76,7 @@ func (tf *Taskfile) UnmarshalYAML(node *yaml.Node) error {
 			Output   Output
 			Method   string
 			Includes *Includes
+			Plugins  *Plugins
 			Set      []string
 			Shopt    []string
 			Vars     *Vars
@@ -92,6 +97,7 @@ func (tf *Taskfile) UnmarshalYAML(node *yaml.Node) error {
 		tf.Output = taskfile.Output
 		tf.Method = taskfile.Method
 		tf.Includes = taskfile.Includes
+		tf.Plugins = taskfile.Plugins
 		tf.Set = taskfile.Set
 		tf.Shopt = taskfile.Shopt
 		tf.Vars = taskfile.Vars
@@ -103,6 +109,9 @@ func (tf *Taskfile) UnmarshalYAML(node *yaml.Node) error {
 		tf.Interval = taskfile.Interval
 		if tf.Includes == nil {
 			tf.Includes = NewIncludes()
+		}
+		if tf.Plugins == nil {
+			tf.Plugins = NewPlugins()
 		}
 		if tf.Vars == nil {
 			tf.Vars = NewVars()
