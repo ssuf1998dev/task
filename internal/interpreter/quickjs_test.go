@@ -11,6 +11,8 @@ import (
 )
 
 func TestBasic(t *testing.T) {
+	t.Parallel()
+
 	qjs := lo.Must(NewQuickJSInterpreter())
 	defer qjs.Close()
 
@@ -34,6 +36,8 @@ func TestBasic(t *testing.T) {
 // }
 
 func TestProcessEnv(t *testing.T) {
+	t.Parallel()
+
 	qjs, _ := NewQuickJSInterpreter()
 	defer qjs.Close()
 
@@ -60,6 +64,8 @@ func TestProcessEnv(t *testing.T) {
 }
 
 func TestLoadModule(t *testing.T) {
+	t.Parallel()
+
 	qjs, _ := NewQuickJSInterpreter()
 	defer qjs.Close()
 

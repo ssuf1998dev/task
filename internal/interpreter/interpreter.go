@@ -2,13 +2,14 @@ package interpreter
 
 import (
 	_ "embed"
-	"errors"
 	"fmt"
 	"io"
 	"regexp"
 
 	"modernc.org/libc"
 	"modernc.org/libquickjs"
+
+	"github.com/go-task/task/v3/errors"
 )
 
 //go:embed civet/Civet/dist/quickjs.min.mjs
@@ -62,7 +63,7 @@ func (i *JSInterpreter) Interpret(opts *InterpretJSOptions) error {
 			mod := i.qjs.LoadModule(fmt.Sprintf("export{compile};\n%s", civetJs), "civet")
 			if tag(mod) == libquickjs.EJS_TAG_EXCEPTION {
 				err := i.qjs.ExceptionToError()
-				opts.Stderr.Write([]byte(err.Error() + "\n"))
+				_, _ = opts.Stderr.Write([]byte(err.Error() + "\n"))
 				return err
 			}
 			defer libquickjs.XFreeValue(i.qjs.tls, i.qjs.ctx, mod)
@@ -78,7 +79,7 @@ func (i *JSInterpreter) Interpret(opts *InterpretJSOptions) error {
 		defer libquickjs.XFreeValue(i.qjs.tls, i.qjs.ctx, js)
 		if tag(js) == libquickjs.EJS_TAG_EXCEPTION {
 			err := i.qjs.ExceptionToError()
-			opts.Stderr.Write([]byte(err.Error() + "\n"))
+			_, _ = opts.Stderr.Write([]byte(err.Error() + "\n"))
 			return err
 		}
 
@@ -96,13 +97,13 @@ func (i *JSInterpreter) Interpret(opts *InterpretJSOptions) error {
 	defer libquickjs.XFreeValue(i.qjs.tls, i.qjs.ctx, json)
 	if tag(json) == libquickjs.EJS_TAG_EXCEPTION {
 		err := i.qjs.ExceptionToError()
-		opts.Stderr.Write([]byte(err.Error() + "\n"))
+		_, _ = opts.Stderr.Write([]byte(err.Error() + "\n"))
 		return err
 	}
 
 	jsonPtr := libquickjs.XToCString(i.qjs.tls, i.qjs.ctx, json)
 	defer libquickjs.XJS_FreeCString(i.qjs.tls, i.qjs.ctx, jsonPtr)
-	opts.Stdout.Write([]byte(libc.GoString(jsonPtr) + "\n"))
+	_, _ = opts.Stdout.Write([]byte(libc.GoString(jsonPtr) + "\n"))
 
 	return nil
 }
