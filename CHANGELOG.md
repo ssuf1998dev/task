@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Compatible with prerelease version for forking (#3 by @ssuf1998dev)
+- Compatible with prerelease version for forking
 
 ## v3.44.0 - 2025-06-08
 
