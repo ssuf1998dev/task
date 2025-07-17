@@ -14,7 +14,7 @@ func TestBasic(t *testing.T) {
 	qjs := lo.Must(NewQuickJSInterpreter())
 	defer qjs.Close()
 
-	var val = qjs.Eval("1+1")
+	val := qjs.Eval("1+1")
 	assert.Equal(t, tag(val), int32(libquickjs.EJS_TAG_INT))
 	assert.Equal(t, int(*(*int32)(unsafe.Pointer(&val))), 2)
 
@@ -40,12 +40,12 @@ func TestProcessEnv(t *testing.T) {
 	qjs.ProcessEnv(map[string]string{
 		"foo": "bar",
 	})
-	var val = qjs.Eval("process.env")
+	val := qjs.Eval("process.env")
 	assert.Equal(t, tag(val), int32(libquickjs.EJS_TAG_OBJECT))
 
 	val = qjs.Eval("process.env.foo")
 	assert.Equal(t, tag(val), int32(libquickjs.EJS_TAG_STRING))
-	var ptr = libquickjs.XToCString(qjs.tls, qjs.ctx, val)
+	ptr := libquickjs.XToCString(qjs.tls, qjs.ctx, val)
 	defer libquickjs.XJS_FreeCString(qjs.tls, qjs.ctx, ptr)
 	assert.Equal(t, libc.GoString(ptr), "bar")
 
@@ -64,7 +64,7 @@ func TestLoadModule(t *testing.T) {
 	defer qjs.Close()
 
 	qjs.LoadModule("export const foo = 'bar'", "foo")
-	var val = qjs.Eval("(async()=>{const {foo} = await import('foo');return foo;})()", QJSEvalAwait(true))
+	val := qjs.Eval("(async()=>{const {foo} = await import('foo');return foo;})()", QJSEvalAwait(true))
 	assert.Equal(t, tag(val), int32(libquickjs.EJS_TAG_STRING))
 	ptr := libquickjs.XToCString(qjs.tls, qjs.ctx, val)
 	defer libquickjs.XJS_FreeCString(qjs.tls, qjs.ctx, ptr)

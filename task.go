@@ -353,7 +353,7 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		}
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
 
-		var intp = "sh"
+		intp := "sh"
 		if experiments.Interpreter.Enabled() {
 			intp = cmd.Interpreter
 		}

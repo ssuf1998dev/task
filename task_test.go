@@ -1876,7 +1876,7 @@ func TestInterpreterCmds(t *testing.T) {
 	require.NoError(t, e.Setup())
 
 	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "js"}))
-	var output = strings.TrimSpace(`
+	output := strings.TrimSpace(`
 task: [js] return 1 + 2;
 3
 task: [js] var hello = 'world';
@@ -1918,7 +1918,7 @@ func TestInterpreterVars(t *testing.T) {
 	require.NoError(t, e.Setup())
 
 	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "var-js"}))
-	var output = strings.TrimSpace(`
+	output := strings.TrimSpace(`
 task: [var-js] echo 3
 3`)
 	assert.Contains(t, buff.String(), output)

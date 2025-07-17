@@ -54,7 +54,7 @@ func (i *JSInterpreter) Interpret(opts *InterpretJSOptions) error {
 
 	i.qjs.ProcessEnv(opts.Env)
 
-	var script = opts.Script
+	script := opts.Script
 
 	switch opts.Dialect {
 	case "civet":

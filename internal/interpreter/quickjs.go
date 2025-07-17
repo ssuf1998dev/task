@@ -209,7 +209,6 @@ func (i *QuickJSInterpreter) LoadModule(code string, moduleName string, opts ...
 	}
 
 	codeByte, err := i.Compile(code, QJSEvalFlagModule(true), QJSEvalFlagCompileOnly(true), QJSEvalFileName(moduleName))
-
 	if err != nil {
 		msgPtr := lo.Must(libc.CString(err.Error()))
 		defer libc.Xfree(i.tls, msgPtr)
@@ -271,7 +270,7 @@ func (i *QuickJSInterpreter) Compile(code string, opts ...QJSEvalOption) ([]byte
 	val := i.Eval(code, opts...)
 	defer libquickjs.XFreeValue(i.tls, i.ctx, val)
 
-	var kSize = 0
+	kSize := 0
 	ptr := libquickjs.XJS_WriteObject(i.tls, i.ctx, uintptr(unsafe.Pointer(&kSize)), val, libc.Int32(libquickjs.MJS_WRITE_OBJ_BYTECODE))
 	if ptr == 0 {
 		return nil, fmt.Errorf("OOM")

@@ -177,7 +177,7 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, 
 		dir = v.Dir
 	}
 
-	var intp = "sh"
+	intp := "sh"
 	if experiments.Interpreter.Enabled() {
 		intp = v.Interpreter
 	}
