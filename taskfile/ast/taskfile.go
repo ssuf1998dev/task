@@ -91,7 +91,7 @@ func (tf *Taskfile) UnmarshalYAML(node *yaml.Node) error {
 			return errors.NewTaskfileDecodeError(err, node)
 		}
 		if len(taskfile.Version.Prerelease()) == 0 {
-			taskfile.Version.SetPrerelease("0")
+			_, _ = taskfile.Version.SetPrerelease("0")
 		}
 		tf.Version = taskfile.Version
 		tf.Output = taskfile.Output
