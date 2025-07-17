@@ -1,8 +1,8 @@
 {
   "yaml.schemas": {
     "./website/static/schema.json": [
-      "Taskfile.yml",
-      "tmp/**/*.yml"
+      "Taskfile.{yml,yaml}",
+      "tmp/**/*.{yml,yaml}"
     ]
   },
   "search.exclude": {
@@ -11,7 +11,7 @@
     "**/i18n": true
   },
   "gopls": {
-      "formatting.local": "github.com/go-task"
+    "formatting.local": "github.com/go-task"
   },
   "go.formatTool": "gofumpt"
 }
