@@ -13,7 +13,7 @@ import (
 // NamespaceSeparator contains the character that separates namespaces
 const NamespaceSeparator = ":"
 
-var V3 = semver.MustParse("3")
+var V3 = semver.MustParse("3-0")
 
 // ErrIncludedTaskfilesCantHaveDotenvs is returned when a included Taskfile contains dotenvs
 var ErrIncludedTaskfilesCantHaveDotenvs = errors.New("task: Included Taskfiles can't have dotenv declarations. Please, move the dotenv declaration to the main Taskfile")
@@ -84,6 +84,9 @@ func (tf *Taskfile) UnmarshalYAML(node *yaml.Node) error {
 		}
 		if err := node.Decode(&taskfile); err != nil {
 			return errors.NewTaskfileDecodeError(err, node)
+		}
+		if len(taskfile.Version.Prerelease()) == 0 {
+			_, _ = taskfile.Version.SetPrerelease("0")
 		}
 		tf.Version = taskfile.Version
 		tf.Output = taskfile.Output
