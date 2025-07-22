@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/samber/lo"
 	"github.com/sebdah/goldie/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1866,6 +1867,8 @@ func TestInterpreterCmds(t *testing.T) {
 
 	t.Parallel()
 
+	cwd := lo.Must(os.Getwd())
+
 	const dir = "testdata/interpreter"
 	var buff bytes.Buffer
 	e := task.NewExecutor(
@@ -1901,12 +1904,16 @@ task: [civet] return 1 + 2
 task: [civet] return [1,2,3] |> .map & * 2
 [2,4,6]`)
 	assert.Contains(t, buff.String(), output)
+
+	assert.Equal(t, cwd, lo.Must(os.Getwd()))
 }
 
 func TestInterpreterVars(t *testing.T) {
 	enableExperimentForTest(t, &experiments.Interpreter, 1)
 
 	t.Parallel()
+
+	cwd := lo.Must(os.Getwd())
 
 	const dir = "testdata/interpreter"
 	var buff bytes.Buffer
@@ -1929,6 +1936,8 @@ task: [var-js] echo 3
 task: [var-civet] echo 6
 6`)
 	assert.Contains(t, buff.String(), output)
+
+	assert.Equal(t, cwd, lo.Must(os.Getwd()))
 }
 
 func TestExitCodeZero(t *testing.T) {

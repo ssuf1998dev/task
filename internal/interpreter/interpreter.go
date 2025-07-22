@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
+	"os"
 	"regexp"
 
 	"modernc.org/libc"
@@ -51,6 +52,12 @@ func NewJSInterpreter() *JSInterpreter {
 func (i *JSInterpreter) Interpret(opts *InterpretJSOptions) error {
 	if opts == nil {
 		return ErrNilOptions
+	}
+
+	if dir, err := os.Getwd(); err == nil {
+		defer (func() {
+			os.Chdir(dir)
+		})()
 	}
 
 	i.qjs.ProcessEnv(opts.Env)
