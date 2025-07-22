@@ -56,7 +56,7 @@ func (i *JSInterpreter) Interpret(opts *InterpretJSOptions) error {
 
 	if dir, err := os.Getwd(); err == nil {
 		defer (func() {
-			os.Chdir(dir)
+			_ = os.Chdir(dir)
 		})()
 	}
 
