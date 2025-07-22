@@ -1862,10 +1862,8 @@ task-1 ran successfully
 	assert.Contains(t, buff.String(), "child task deferred value-from-parent")
 }
 
-func TestInterpreterCmds(t *testing.T) {
+func TestInterpreterCmds(t *testing.T) { // nolint:paralleltest // cannot run in parallel
 	enableExperimentForTest(t, &experiments.Interpreter, 1)
-
-	t.Parallel()
 
 	cwd := lo.Must(os.Getwd())
 
@@ -1908,10 +1906,8 @@ task: [civet] return [1,2,3] |> .map & * 2
 	assert.Equal(t, cwd, lo.Must(os.Getwd()))
 }
 
-func TestInterpreterVars(t *testing.T) {
+func TestInterpreterVars(t *testing.T) { // nolint:paralleltest // cannot run in parallel
 	enableExperimentForTest(t, &experiments.Interpreter, 1)
-
-	t.Parallel()
 
 	cwd := lo.Must(os.Getwd())
 
