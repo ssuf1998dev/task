@@ -12,9 +12,11 @@ import (
 	"mvdan.cc/sh/v3/interp"
 
 	"github.com/go-task/task/v3/errors"
+	"github.com/go-task/task/v3/experiments"
 	"github.com/go-task/task/v3/internal/env"
 	"github.com/go-task/task/v3/internal/execext"
 	"github.com/go-task/task/v3/internal/fingerprint"
+	"github.com/go-task/task/v3/internal/js"
 	"github.com/go-task/task/v3/internal/logger"
 	"github.com/go-task/task/v3/internal/output"
 	"github.com/go-task/task/v3/internal/slicesext"
@@ -116,8 +118,16 @@ func (e *Executor) splitRegularAndWatchCalls(calls ...*Call) (regularCalls []*Ca
 	return
 }
 
+func (e *Executor) runTaskCleanup() {
+	if e.js != nil {
+		e.js.Close()
+		e.js = nil
+	}
+}
+
 // RunTask runs a task by its name
 func (e *Executor) RunTask(ctx context.Context, call *Call) error {
+	defer e.runTaskCleanup()
 	t, err := e.FastCompiledTask(call)
 	if err != nil {
 		return err
@@ -343,16 +353,38 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		}
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
 
-		err = execext.RunCommand(ctx, &execext.RunCommandOptions{
-			Command:   cmd.Cmd,
-			Dir:       t.Dir,
-			Env:       env.Get(t),
-			PosixOpts: slicesext.UniqueJoin(e.Taskfile.Set, t.Set, cmd.Set),
-			BashOpts:  slicesext.UniqueJoin(e.Taskfile.Shopt, t.Shopt, cmd.Shopt),
-			Stdin:     e.Stdin,
-			Stdout:    stdOut,
-			Stderr:    stdErr,
-		})
+		intp := "sh"
+		if experiments.Interpreter.Enabled() {
+			intp = cmd.Interpreter
+		}
+
+		switch intp {
+		case "javascript", "js", "civet":
+			if e.js == nil {
+				e.js = js.NewJavaScript()
+			}
+			err = e.js.Interpret(&js.JSOptions{
+				Script:  cmd.Cmd,
+				Dialect: cmd.Interpreter,
+				Dir:     t.Dir,
+				Env:     env.GetMap(t),
+				Stdin:   e.Stdin,
+				Stdout:  stdOut,
+				Stderr:  stdErr,
+			})
+		default:
+			err = execext.RunCommand(ctx, &execext.RunCommandOptions{
+				Command:   cmd.Cmd,
+				Dir:       t.Dir,
+				Env:       env.Get(t),
+				PosixOpts: slicesext.UniqueJoin(e.Taskfile.Set, t.Set, cmd.Set),
+				BashOpts:  slicesext.UniqueJoin(e.Taskfile.Shopt, t.Shopt, cmd.Shopt),
+				Stdin:     e.Stdin,
+				Stdout:    stdOut,
+				Stderr:    stdErr,
+			})
+		}
+
 		if closeErr := closer(err); closeErr != nil {
 			e.Logger.Errf(logger.Red, "task: unable to close writer: %v\n", closeErr)
 		}

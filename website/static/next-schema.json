@@ -28,6 +28,10 @@
         }
       ]
     },
+    "interpreter": {
+      "type": "string",
+      "enum": ["sh", "js", "javascript", "civet"]
+    },
     "tasks": {
       "type": "object",
       "patternProperties": {
@@ -308,6 +312,10 @@
           "type": "string",
           "description": "The value will be treated as a command and the output assigned to the variable"
         },
+        "interpreter": {
+          "description": "Customise interpreter that executes commands.",
+          "$ref": "#/definitions/interpreter"
+        },
         "ref": {
           "type": "string",
           "description": "The value will be used to lookup the value of another variable which will then be assigned to this variable"
@@ -370,6 +378,10 @@
         "platforms": {
           "description": "Specifies which platforms the command should be run on.",
           "$ref": "#/definitions/platforms"
+        },
+        "interpreter": {
+          "description": "Customise interpreter that executes commands.",
+          "$ref": "#/definitions/interpreter"
         }
       },
       "additionalProperties": false,

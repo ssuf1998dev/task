@@ -9,9 +9,11 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/go-task/task/v3/experiments"
 	"github.com/go-task/task/v3/internal/env"
 	"github.com/go-task/task/v3/internal/execext"
 	"github.com/go-task/task/v3/internal/filepathext"
+	"github.com/go-task/task/v3/internal/js"
 	"github.com/go-task/task/v3/internal/logger"
 	"github.com/go-task/task/v3/internal/templater"
 	"github.com/go-task/task/v3/internal/version"
@@ -30,6 +32,8 @@ type Compiler struct {
 
 	dynamicCache   map[string]string
 	muDynamicCache sync.Mutex
+
+	js *js.JavaScript
 }
 
 func (c *Compiler) GetTaskfileVariables() (*ast.Vars, error) {
@@ -144,9 +148,17 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 	return result, nil
 }
 
+func (c *Compiler) handleDynamicVarCleanup() {
+	if c.js != nil {
+		c.js.Close()
+		c.js = nil
+	}
+}
+
 func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, error) {
 	c.muDynamicCache.Lock()
 	defer c.muDynamicCache.Unlock()
+	defer c.handleDynamicVarCleanup()
 
 	// If the variable is not dynamic or it is empty, return an empty string
 	if v.Sh == nil || *v.Sh == "" {
@@ -165,16 +177,44 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, 
 		dir = v.Dir
 	}
 
-	var stdout bytes.Buffer
-	opts := &execext.RunCommandOptions{
-		Command: *v.Sh,
-		Dir:     dir,
-		Stdout:  &stdout,
-		Stderr:  c.Logger.Stderr,
-		Env:     e,
+	intp := "sh"
+	if experiments.Interpreter.Enabled() {
+		intp = v.Interpreter
 	}
-	if err := execext.RunCommand(context.Background(), opts); err != nil {
-		return "", fmt.Errorf(`task: Command "%s" failed: %s`, opts.Command, err)
+
+	var stdout bytes.Buffer
+	switch intp {
+	case "javascript", "js", "civet":
+		if c.js == nil {
+			c.js = js.NewJavaScript()
+		}
+		env := map[string]string{}
+		for _, v := range e {
+			parts := strings.Split(v, "=")
+			env[parts[0]] = parts[1]
+		}
+		opts := &js.JSOptions{
+			Script:  *v.Sh,
+			Dialect: intp,
+			Dir:     dir,
+			Env:     env,
+			Stdout:  &stdout,
+			Stderr:  c.Logger.Stderr,
+		}
+		if err := c.js.Interpret(opts); err != nil {
+			return "", fmt.Errorf(`task: Script "%s" failed: %s`, opts.Script, err)
+		}
+	default:
+		opts := &execext.RunCommandOptions{
+			Command: *v.Sh,
+			Dir:     dir,
+			Stdout:  &stdout,
+			Stderr:  c.Logger.Stderr,
+			Env:     e,
+		}
+		if err := execext.RunCommand(context.Background(), opts); err != nil {
+			return "", fmt.Errorf(`task: Command "%s" failed: %s`, opts.Command, err)
+		}
 	}
 
 	// Trim a single trailing newline from the result to make most command

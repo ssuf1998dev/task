@@ -1,0 +1,3 @@
+[submodule "internal/interpreter/civet/Civet"]
+	path = internal/js/civet/Civet
+	url = https://github.com/DanielXMoore/Civet.git
