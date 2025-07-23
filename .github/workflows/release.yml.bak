@@ -3,7 +3,7 @@ name: goreleaser
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
 
 jobs:
   goreleaser:
@@ -22,8 +22,9 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
-          distribution: goreleaser
+          distribution: goreleaser-pro
           version: latest
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          GITHUB_TOKEN: ${{secrets.GH_PAT}}
+          GORELEASER_KEY: ${{secrets.GORELEASER_KEY}}
