@@ -1,4 +1,4 @@
-package interpreter
+package js
 
 import (
 	"testing"
@@ -13,7 +13,7 @@ import (
 func TestBasic(t *testing.T) {
 	t.Parallel()
 
-	qjs := lo.Must(NewQuickJSInterpreter())
+	qjs := lo.Must(NewQuickJS())
 	defer qjs.Close()
 
 	val := qjs.Eval("1+1")
@@ -26,7 +26,7 @@ func TestBasic(t *testing.T) {
 }
 
 // func TestInterrupt(t *testing.T) {
-// 	qjs, _ := NewQuickJSInterpreter()
+// 	qjs, _ := NewQuickJS()
 // 	defer qjs.Close()
 
 // 	qjs.SetTimeoutInterrupt(3)
@@ -38,7 +38,7 @@ func TestBasic(t *testing.T) {
 func TestProcessEnv(t *testing.T) {
 	t.Parallel()
 
-	qjs, _ := NewQuickJSInterpreter()
+	qjs, _ := NewQuickJS()
 	defer qjs.Close()
 
 	qjs.ProcessEnv(map[string]string{
@@ -66,7 +66,7 @@ func TestProcessEnv(t *testing.T) {
 func TestLoadModule(t *testing.T) {
 	t.Parallel()
 
-	qjs, _ := NewQuickJSInterpreter()
+	qjs, _ := NewQuickJS()
 	defer qjs.Close()
 
 	qjs.LoadModule("export const foo = 'bar'", "foo")

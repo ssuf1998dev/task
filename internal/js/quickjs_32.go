@@ -1,6 +1,6 @@
 //go:build 386 || arm
 
-package interpreter
+package js
 
 import (
 	"modernc.org/libc"

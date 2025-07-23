@@ -43,7 +43,7 @@ jobs:
           GOPROXY: https://proxy.golang.org
 
       - name: Build civet for interpreting
-        working-directory: internal/interpreter/civet
+        working-directory: internal/js/civet
         run: |
           git submodule init
           git submodule update

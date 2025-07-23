@@ -223,9 +223,9 @@ tasks:
     cmds:
       - npm publish --access=public
 
-  interpreter:civet:
+  js:civet:
     desc: Build civet for interpreting.
-    dir: internal/interpreter/civet
+    dir: internal/js/civet
     cmd: |
       git submodule init
       git submodule update

@@ -16,7 +16,7 @@ import (
 	"github.com/go-task/task/v3/internal/env"
 	"github.com/go-task/task/v3/internal/execext"
 	"github.com/go-task/task/v3/internal/fingerprint"
-	"github.com/go-task/task/v3/internal/interpreter"
+	"github.com/go-task/task/v3/internal/js"
 	"github.com/go-task/task/v3/internal/logger"
 	"github.com/go-task/task/v3/internal/output"
 	"github.com/go-task/task/v3/internal/slicesext"
@@ -119,9 +119,9 @@ func (e *Executor) splitRegularAndWatchCalls(calls ...*Call) (regularCalls []*Ca
 }
 
 func (e *Executor) runTaskCleanup() {
-	if e.jsInterpreter != nil {
-		e.jsInterpreter.Close()
-		e.jsInterpreter = nil
+	if e.js != nil {
+		e.js.Close()
+		e.js = nil
 	}
 }
 
@@ -360,10 +360,10 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 
 		switch intp {
 		case "javascript", "js", "civet":
-			if e.jsInterpreter == nil {
-				e.jsInterpreter = interpreter.NewJSInterpreter()
+			if e.js == nil {
+				e.js = js.NewJavaScript()
 			}
-			err = e.jsInterpreter.Interpret(&interpreter.InterpretJSOptions{
+			err = e.js.Interpret(&js.JSOptions{
 				Script:  cmd.Cmd,
 				Dialect: cmd.Interpreter,
 				Dir:     t.Dir,

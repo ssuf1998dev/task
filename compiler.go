@@ -13,7 +13,7 @@ import (
 	"github.com/go-task/task/v3/internal/env"
 	"github.com/go-task/task/v3/internal/execext"
 	"github.com/go-task/task/v3/internal/filepathext"
-	"github.com/go-task/task/v3/internal/interpreter"
+	"github.com/go-task/task/v3/internal/js"
 	"github.com/go-task/task/v3/internal/logger"
 	"github.com/go-task/task/v3/internal/templater"
 	"github.com/go-task/task/v3/internal/version"
@@ -33,7 +33,7 @@ type Compiler struct {
 	dynamicCache   map[string]string
 	muDynamicCache sync.Mutex
 
-	jsInterpreter *interpreter.JSInterpreter
+	js *js.JavaScript
 }
 
 func (c *Compiler) GetTaskfileVariables() (*ast.Vars, error) {
@@ -149,9 +149,9 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 }
 
 func (c *Compiler) handleDynamicVarCleanup() {
-	if c.jsInterpreter != nil {
-		c.jsInterpreter.Close()
-		c.jsInterpreter = nil
+	if c.js != nil {
+		c.js.Close()
+		c.js = nil
 	}
 }
 
@@ -185,15 +185,15 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, 
 	var stdout bytes.Buffer
 	switch intp {
 	case "javascript", "js", "civet":
-		if c.jsInterpreter == nil {
-			c.jsInterpreter = interpreter.NewJSInterpreter()
+		if c.js == nil {
+			c.js = js.NewJavaScript()
 		}
 		env := map[string]string{}
 		for _, v := range e {
 			parts := strings.Split(v, "=")
 			env[parts[0]] = parts[1]
 		}
-		opts := &interpreter.InterpretJSOptions{
+		opts := &js.JSOptions{
 			Script:  *v.Sh,
 			Dialect: intp,
 			Dir:     dir,
@@ -201,7 +201,7 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, 
 			Stdout:  &stdout,
 			Stderr:  c.Logger.Stderr,
 		}
-		if err := c.jsInterpreter.Interpret(opts); err != nil {
+		if err := c.js.Interpret(opts); err != nil {
 			return "", fmt.Errorf(`task: Script "%s" failed: %s`, opts.Script, err)
 		}
 	default:

@@ -1,4 +1,4 @@
-package interpreter
+package js
 
 import (
 	"fmt"
@@ -9,13 +9,13 @@ import (
 	"modernc.org/libquickjs"
 )
 
-type QuickJSInterpreter struct {
+type QuickJS struct {
 	tls *libc.TLS
 	rt  uintptr
 	ctx uintptr
 }
 
-func NewQuickJSInterpreter() (*QuickJSInterpreter, error) {
+func NewQuickJS() (*QuickJS, error) {
 	tls := libc.NewTLS()
 	rt := libquickjs.XJS_NewRuntime(tls)
 	if rt == 0 {
@@ -46,7 +46,7 @@ func NewQuickJSInterpreter() (*QuickJSInterpreter, error) {
 
 	libquickjs.XJS_SetMemoryLimit(tls, rt, libquickjs.Tsize_t(32*1024*1024))
 
-	result := &QuickJSInterpreter{
+	result := &QuickJS{
 		tls: tls,
 		rt:  rt,
 		ctx: ctx,
@@ -58,7 +58,7 @@ func NewQuickJSInterpreter() (*QuickJSInterpreter, error) {
 	return result, nil
 }
 
-func (i *QuickJSInterpreter) Close() {
+func (i *QuickJS) Close() {
 	libquickjs.XJS_FreeContext(i.tls, i.ctx)
 	libquickjs.XJS_FreeRuntime(i.tls, i.rt)
 	i.tls.Close()
@@ -118,7 +118,7 @@ func QJSEvalLoadOnly(loadOnly bool) QJSEvalOption {
 	}
 }
 
-func (i *QuickJSInterpreter) Eval(code string, opts ...QJSEvalOption) libquickjs.TJSValue {
+func (i *QuickJS) Eval(code string, opts ...QJSEvalOption) libquickjs.TJSValue {
 	options := QJSEvalOptions{
 		js_eval_type_global: true,
 		filename:            "<eval>",
@@ -162,7 +162,7 @@ func (i *QuickJSInterpreter) Eval(code string, opts ...QJSEvalOption) libquickjs
 	return val
 }
 
-func (i *QuickJSInterpreter) ProcessEnv(env map[string]string) {
+func (i *QuickJS) ProcessEnv(env map[string]string) {
 	g := libquickjs.XJS_GetGlobalObject(i.tls, i.ctx)
 
 	process := libquickjs.XJS_NewObject(i.tls, i.ctx)
@@ -191,7 +191,7 @@ func (i *QuickJSInterpreter) ProcessEnv(env map[string]string) {
 	libquickjs.XJS_SetPropertyStr(i.tls, i.ctx, g, processNamePtr, process)
 }
 
-func (i *QuickJSInterpreter) LoadModule(code string, moduleName string, opts ...QJSEvalOption) libquickjs.TJSValue {
+func (i *QuickJS) LoadModule(code string, moduleName string, opts ...QJSEvalOption) libquickjs.TJSValue {
 	options := QJSEvalOptions{
 		load_only: false,
 	}
@@ -218,7 +218,7 @@ func (i *QuickJSInterpreter) LoadModule(code string, moduleName string, opts ...
 	return i.LoadModuleBytecode(codeByte, QJSEvalLoadOnly(options.load_only))
 }
 
-func (i *QuickJSInterpreter) LoadModuleBytecode(buf []byte, opts ...QJSEvalOption) libquickjs.TJSValue {
+func (i *QuickJS) LoadModuleBytecode(buf []byte, opts ...QJSEvalOption) libquickjs.TJSValue {
 	if len(buf) == 0 {
 		msgPtr := lo.Must(libc.CString("empty bytecode"))
 		defer libc.Xfree(i.tls, msgPtr)
@@ -265,7 +265,7 @@ func (i *QuickJSInterpreter) LoadModuleBytecode(buf []byte, opts ...QJSEvalOptio
 	}
 }
 
-func (i *QuickJSInterpreter) Compile(code string, opts ...QJSEvalOption) ([]byte, error) {
+func (i *QuickJS) Compile(code string, opts ...QJSEvalOption) ([]byte, error) {
 	opts = append(opts, QJSEvalFlagCompileOnly(true))
 	val := i.Eval(code, opts...)
 	defer libquickjs.XFreeValue(i.tls, i.ctx, val)
@@ -286,7 +286,7 @@ func (i *QuickJSInterpreter) Compile(code string, opts ...QJSEvalOption) ([]byte
 	return b, nil
 }
 
-func (i *QuickJSInterpreter) ExceptionToError() error {
+func (i *QuickJS) ExceptionToError() error {
 	e := libquickjs.XJS_GetException(i.tls, i.ctx)
 	defer libquickjs.XFreeValue(i.tls, i.ctx, e)
 	p := libquickjs.XToCString(i.tls, i.ctx, e)
