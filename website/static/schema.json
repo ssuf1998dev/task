@@ -12,6 +12,26 @@
         "type": "string"
       }
     },
+    "plugin": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "file": {
+              "description": "The path for loading plugin. If a relative path, resolved relative to the directory containing the including Taskfile.",
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "interpreter": {
+      "type": "string",
+      "enum": ["sh", "js", "javascript", "civet"]
+    },
     "tasks": {
       "type": "object",
       "patternProperties": {
@@ -292,6 +312,10 @@
           "type": "string",
           "description": "The value will be treated as a command and the output assigned to the variable"
         },
+        "interpreter": {
+          "description": "Customise interpreter that executes commands.",
+          "$ref": "#/definitions/interpreter"
+        },
         "ref": {
           "type": "string",
           "description": "The value will be used to lookup the value of another variable which will then be assigned to this variable"
@@ -354,6 +378,10 @@
         "platforms": {
           "description": "Specifies which platforms the command should be run on.",
           "$ref": "#/definitions/platforms"
+        },
+        "interpreter": {
+          "description": "Customise interpreter that executes commands.",
+          "$ref": "#/definitions/interpreter"
         }
       },
       "additionalProperties": false,
@@ -694,6 +722,25 @@
               ]
             }
           }
+        },
+        "plugins": {
+          "description": "Loads plugins from the specified files, which will provide some custom functions prefixed with plugin name.",
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/plugin"
+              }
+            },
+            {
+              "type": "object",
+              "patternProperties": {
+                "^.*$": {
+                  "$ref": "#/definitions/plugin"
+                }
+              }
+            }
+          ]
         },
         "vars": {
           "description": "A set of global variables.",

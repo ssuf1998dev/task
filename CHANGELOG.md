@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased
+## v3.44.0-1.0.0 - 2025-07-23
 
 - Compatible with prerelease version for forking.
 - Plugins support with [extism](https://github.com/extism).
+- [JavaScript](https://gitlab.com/cznic/libquickjs) and [Civet](https://github.com/DanielXMoore/Civet) interpreting.
 
 ## v3.44.0 - 2025-06-08
 
