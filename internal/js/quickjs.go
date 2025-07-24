@@ -31,18 +31,9 @@ func NewQuickJS() (*QuickJS, error) {
 		return nil, fmt.Errorf("failed to create with empty JavaScript context")
 	}
 
+	libquickjs.Xjs_std_add_helpers(tls, ctx, -1, 0)
 	libquickjs.Xjs_init_module_std(tls, ctx, lo.Must(libc.CString("std")))
 	libquickjs.Xjs_init_module_os(tls, ctx, lo.Must(libc.CString("os")))
-
-	code := `
-    import { setTimeout, clearTimeout } from "os";
-    globalThis.setTimeout = setTimeout;
-    globalThis.clearTimeout = clearTimeout;
-    `
-
-	compiled := libquickjs.XJS_Eval(tls, ctx, lo.Must(libc.CString(code)), libquickjs.Tsize_t(len(code)), lo.Must(libc.CString("init.js")), libquickjs.MJS_EVAL_TYPE_MODULE|libquickjs.MJS_EVAL_FLAG_COMPILE_ONLY)
-	ran := libquickjs.Xjs_std_await(tls, ctx, libquickjs.XJS_EvalFunction(tls, ctx, compiled))
-	libquickjs.XFreeValue(tls, ctx, ran)
 
 	libquickjs.XJS_SetMemoryLimit(tls, rt, libquickjs.Tsize_t(32*1024*1024))
 
