@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Expose JavaScript some standard functions, objects into global for convenience.
+
 ## v3.44.1 - 2025-07-23
 
 - Internal tasks will no longer be shown as suggestions since they cannot be

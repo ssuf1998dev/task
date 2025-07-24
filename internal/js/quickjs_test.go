@@ -76,3 +76,19 @@ func TestLoadModule(t *testing.T) {
 	defer libquickjs.XJS_FreeCString(qjs.tls, qjs.ctx, ptr)
 	assert.Equal(t, libc.GoString(ptr), "bar")
 }
+
+func TestStd(t *testing.T) {
+	t.Parallel()
+
+	qjs, _ := NewQuickJS()
+	defer qjs.Close()
+
+	val := qjs.Eval("console.log")
+	assert.Equal(t, int32(libquickjs.EJS_TAG_OBJECT), tag(val))
+
+	val = qjs.Eval("print")
+	assert.Equal(t, int32(libquickjs.EJS_TAG_OBJECT), tag(val))
+
+	val = qjs.Eval("import { setTimeout } from 'os';setTimeout", QJSEvalFlagModule(true))
+	assert.Equal(t, int32(libquickjs.EJS_TAG_OBJECT), tag(val))
+}
