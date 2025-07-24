@@ -4,8 +4,8 @@ go 1.23.0
 
 require (
 	github.com/Ladicle/tabwriter v1.0.0
-	github.com/Masterminds/semver/v3 v3.3.1
-	github.com/alecthomas/chroma/v2 v2.18.0
+	github.com/Masterminds/semver/v3 v3.4.0
+	github.com/alecthomas/chroma/v2 v2.19.0
 	github.com/chainguard-dev/git-urls v1.0.2
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dominikbraun/graph v0.23.0
@@ -14,9 +14,9 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-git/go-billy/v5 v5.6.2
-	github.com/go-git/go-git/v5 v5.16.0
+	github.com/go-git/go-git/v5 v5.16.2
 	github.com/go-task/slim-sprig/v3 v3.0.0
-	github.com/go-task/template v0.1.0
+	github.com/go-task/template v0.2.0
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/mitchellh/hashstructure/v2 v2.0.2
@@ -24,17 +24,17 @@ require (
 	github.com/puzpuzpuz/xsync/v3 v3.5.1
 	github.com/sajari/fuzzy v1.0.0
 	github.com/samber/lo v1.51.0
-	github.com/sebdah/goldie/v2 v2.5.5
-	github.com/spf13/pflag v1.0.6
+	github.com/sebdah/goldie/v2 v2.7.1
+	github.com/spf13/pflag v1.0.7
 	github.com/stretchr/testify v1.10.0
 	github.com/tetratelabs/wazero v1.9.0
 	github.com/zeebo/xxh3 v1.0.2
-	golang.org/x/sync v0.14.0
-	golang.org/x/term v0.32.0
+	golang.org/x/sync v0.16.0
+	golang.org/x/term v0.33.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/libc v1.65.4
 	modernc.org/libquickjs v0.11.0
-	mvdan.cc/sh/v3 v3.11.0
+	mvdan.cc/sh/v3 v3.12.0
 )
 
 require (
@@ -70,7 +70,7 @@ require (
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/net v0.39.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/sys v0.34.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

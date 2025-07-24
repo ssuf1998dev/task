@@ -45,7 +45,6 @@ func init() {
 		"toYaml":       toYaml,
 		"mustToYaml":   mustToYaml,
 		"uuid":         uuid.New,
-		"randInt":      rand.Int,
 		"randIntN":     rand.IntN,
 	}
 
