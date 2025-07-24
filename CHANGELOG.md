@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v3.44.1-1.0.1 - 2025-07-24
 
 - Expose JavaScript some standard functions, objects into global for convenience.
 
