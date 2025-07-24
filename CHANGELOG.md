@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Plugin load timeout default to 10s, fix error `context deadline exceeded`.
+
 ## v3.44.1-1.0.1 - 2025-07-24
 
 - Expose JavaScript some standard functions, objects into global for convenience.
