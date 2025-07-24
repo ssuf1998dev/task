@@ -39,6 +39,7 @@ jobs:
           yarn install
           yarn build
           yarn terser dist/quickjs.mjs --compress --mangle --ecma 2015 --output dist/quickjs.min.mjs
+          git apply -R ../build.patch
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
