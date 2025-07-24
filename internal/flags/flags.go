@@ -156,6 +156,10 @@ func init() {
 		pflag.DurationVar(&CacheExpiryDuration, "expiry", 0, "Expiry duration for cached remote Taskfiles.")
 	}
 
+	if experiments.Plugins.Enabled() {
+		pflag.DurationVar(&Timeout, "timeout", time.Second*10, "Timeout for loading plugins.")
+	}
+
 	pflag.Parse()
 }
 
