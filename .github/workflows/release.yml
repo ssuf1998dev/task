@@ -28,6 +28,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@ssuf1998dev"
 
       - name: Build civet for interpreting
         working-directory: internal/js/civet
@@ -49,3 +51,25 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Copy extra files for NPM packages
+        run: |
+          cp website/static/schema.json schema.json
+          cp website/static/schema-taskrc.json schema-taskrc.json
+
+      - name: Build and publish NPM packages
+        uses: evg4b/goreleaser-npm-publisher-action@v1.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          prefix: "@ssuf1998dev"
+          description: A task runner / simpler Make alternative written in Go
+          keywords: |-
+            task
+            taskfile
+            build-tool
+            task-runner
+          files: |-
+            LICENSE
+            README.md
+            schema.json
+            schema-taskrc.json
