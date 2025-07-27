@@ -17,6 +17,14 @@ jobs:
         platform: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{matrix.platform}}
     steps:
+      - name: Set git to use LF
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+
       - name: Set up Go ${{matrix.go-version}}
         uses: actions/setup-go@v5
         with:
@@ -27,15 +35,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: "yarn"
+          cache-dependency-path: internal/js/civet/Civet/yarn.lock
         id: nodejs
-
-      - name: Set git to use LF
-        run: |
-          git config --global core.autocrlf false
-          git config --global core.eol lf
-
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v4
 
       - name: Download Go modules
         run: go mod download
