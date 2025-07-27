@@ -148,17 +148,9 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 	return result, nil
 }
 
-func (c *Compiler) handleDynamicVarCleanup() {
-	if c.js != nil {
-		c.js.Close()
-		c.js = nil
-	}
-}
-
 func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, error) {
 	c.muDynamicCache.Lock()
 	defer c.muDynamicCache.Unlock()
-	defer c.handleDynamicVarCleanup()
 
 	// If the variable is not dynamic or it is empty, return an empty string
 	if v.Sh == nil || *v.Sh == "" {
@@ -185,9 +177,6 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, 
 	var stdout bytes.Buffer
 	switch intp {
 	case "javascript", "js", "civet":
-		if c.js == nil {
-			c.js = js.NewJavaScript()
-		}
 		env := map[string]string{}
 		for _, v := range e {
 			parts := strings.Split(v, "=")

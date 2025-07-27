@@ -17,6 +17,7 @@ import (
 	"github.com/go-task/task/v3/internal/env"
 	"github.com/go-task/task/v3/internal/execext"
 	"github.com/go-task/task/v3/internal/filepathext"
+	"github.com/go-task/task/v3/internal/js"
 	"github.com/go-task/task/v3/internal/logger"
 	"github.com/go-task/task/v3/internal/output"
 	"github.com/go-task/task/v3/internal/version"
@@ -84,9 +85,10 @@ func (e *Executor) readTaskfile(node taskfile.Node) error {
 	)
 	graph, err := reader.Read(ctx, node)
 	if experiments.Plugins.Enabled() {
-		if err := reader.LoadPlugin(ctx, node); err != nil {
-			return err
-		}
+		err = reader.LoadPlugin(ctx, node)
+	}
+	if experiments.Interpreter.Enabled() {
+		e.js, err = js.NewJavaScript()
 	}
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
@@ -217,6 +219,7 @@ func (e *Executor) setupCompiler() error {
 		TaskfileEnv:    e.Taskfile.Env,
 		TaskfileVars:   e.Taskfile.Vars,
 		Logger:         e.Logger,
+		js:             e.js,
 	}
 	return nil
 }

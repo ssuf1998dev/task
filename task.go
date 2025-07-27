@@ -118,16 +118,8 @@ func (e *Executor) splitRegularAndWatchCalls(calls ...*Call) (regularCalls []*Ca
 	return
 }
 
-func (e *Executor) runTaskCleanup() {
-	if e.js != nil {
-		e.js.Close()
-		e.js = nil
-	}
-}
-
 // RunTask runs a task by its name
 func (e *Executor) RunTask(ctx context.Context, call *Call) error {
-	defer e.runTaskCleanup()
 	t, err := e.FastCompiledTask(call)
 	if err != nil {
 		return err
@@ -360,9 +352,6 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 
 		switch intp {
 		case "javascript", "js", "civet":
-			if e.js == nil {
-				e.js = js.NewJavaScript()
-			}
 			err = e.js.Interpret(&js.JSOptions{
 				Script:  cmd.Cmd,
 				Dialect: cmd.Interpreter,

@@ -29,8 +29,7 @@ type JSOptions struct {
 }
 
 type JavaScript struct {
-	qjs         *QuickJS
-	civetLoaded bool
+	qjs *QuickJS
 }
 
 func (j *JavaScript) escape(s string) string {
@@ -44,9 +43,20 @@ func (j *JavaScript) chdirScript(dir string) string {
 	return fmt.Sprintf("(await import('os')).chdir('%s');", j.escape(dir))
 }
 
-func NewJavaScript() *JavaScript {
-	qjs, _ := NewQuickJS()
-	return &JavaScript{qjs: qjs}
+func NewJavaScript() (*JavaScript, error) {
+	qjs, err := NewQuickJS()
+	if err != nil {
+		return nil, err
+	}
+
+	mod := qjs.LoadModule(fmt.Sprintf("export{compile};\n%s", civetJs), "civet")
+	if tag(mod) == libquickjs.EJS_TAG_EXCEPTION {
+		err = qjs.ExceptionToError()
+		return nil, err
+	}
+	defer libquickjs.XFreeValue(qjs.tls, qjs.ctx, mod)
+
+	return &JavaScript{qjs: qjs}, nil
 }
 
 func (j *JavaScript) Interpret(opts *JSOptions) error {
@@ -66,17 +76,6 @@ func (j *JavaScript) Interpret(opts *JSOptions) error {
 
 	switch opts.Dialect {
 	case "civet":
-		if !j.civetLoaded {
-			mod := j.qjs.LoadModule(fmt.Sprintf("export{compile};\n%s", civetJs), "civet")
-			if tag(mod) == libquickjs.EJS_TAG_EXCEPTION {
-				err := j.qjs.ExceptionToError()
-				_, _ = opts.Stderr.Write([]byte(err.Error() + "\n"))
-				return err
-			}
-			defer libquickjs.XFreeValue(j.qjs.tls, j.qjs.ctx, mod)
-			j.civetLoaded = true
-		}
-
 		code := j.escape(script)
 
 		js := j.qjs.Eval(fmt.Sprintf(
