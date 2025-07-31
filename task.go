@@ -127,7 +127,7 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 		return err
 	}
 	if !shouldRunOnCurrentPlatform(t.Platforms) {
-		e.Logger.VerboseOutf(logger.Yellow, `task: %q not for current platform - ignored\n`, call.Task)
+		e.Logger.VerboseOutf(logger.Yellow, "task: %q not for current platform - ignored\n", call.Task)
 		return nil
 	}
 
