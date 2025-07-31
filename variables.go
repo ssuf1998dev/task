@@ -49,6 +49,7 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 
 	new := ast.Task{
 		Task:                 origTask.Task,
+		Interp:               origTask.Interp,
 		Label:                templater.Replace(origTask.Label, cache),
 		Desc:                 templater.Replace(origTask.Desc, cache),
 		Prompt:               templater.Replace(origTask.Prompt, cache),
@@ -118,7 +119,7 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 				new.Env.Set(k, ast.Var{Value: v.Value})
 				continue
 			}
-			static, err := e.Compiler.HandleDynamicVar(v, new.Dir, env.GetFromVars(new.Env))
+			static, err := e.Compiler.HandleDynamicVar(origTask, v, new.Dir, env.GetFromVars(new.Env))
 			if err != nil {
 				return nil, err
 			}

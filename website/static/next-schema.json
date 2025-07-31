@@ -78,6 +78,10 @@
           "description": "The command to be executed.",
           "$ref": "#/definitions/cmd"
         },
+        "interp": {
+          "description": "Customise task default interpreter that executes commands.",
+          "$ref": "#/definitions/interp"
+        },
         "deps": {
           "description": "A list of dependencies of this task. Tasks defined here will run in parallel before this task.",
           "$ref": "#/definitions/deps"

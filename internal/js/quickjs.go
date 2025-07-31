@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sync"
 	"unsafe"
 
 	"github.com/samber/lo"
@@ -12,18 +11,12 @@ import (
 	"modernc.org/libquickjs"
 )
 
-type ModuleCodeByteMap struct {
-	value map[string](*[]byte)
-	mutex sync.RWMutex
-}
-
 type QuickJS struct {
-	tls            *libc.TLS
-	rt             uintptr
-	ctx            uintptr
-	moduleCodeByte *ModuleCodeByteMap
-	Stdout         io.Writer
-	Stderr         io.Writer
+	tls    *libc.TLS
+	rt     uintptr
+	ctx    uintptr
+	Stdout io.Writer
+	Stderr io.Writer
 }
 
 func (i *QuickJS) prepare() {
@@ -65,12 +58,9 @@ func NewQuickJS() (*QuickJS, error) {
 	libquickjs.XJS_SetMemoryLimit(tls, rt, libquickjs.Tsize_t(32*1024*1024))
 
 	result := &QuickJS{
-		tls: tls,
-		rt:  rt,
-		ctx: ctx,
-		moduleCodeByte: &ModuleCodeByteMap{
-			value: map[string]*[]byte{},
-		},
+		tls:    tls,
+		rt:     rt,
+		ctx:    ctx,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	}
@@ -224,13 +214,6 @@ func (i *QuickJS) LoadModule(code string, moduleName string, opts ...QJSEvalOpti
 		fn(&options)
 	}
 
-	i.moduleCodeByte.mutex.RLock()
-	codeByteRef, ok := i.moduleCodeByte.value[moduleName]
-	i.moduleCodeByte.mutex.RUnlock()
-	if ok {
-		return i.LoadModuleBytecode(*codeByteRef, QJSEvalLoadOnly(options.load_only))
-	}
-
 	ptr := lo.Must(libc.CString(code))
 	defer libc.Xfree(i.tls, ptr)
 
@@ -246,10 +229,6 @@ func (i *QuickJS) LoadModule(code string, moduleName string, opts ...QJSEvalOpti
 		defer libc.Xfree(i.tls, msgPtr)
 		return libquickjs.XJS_ThrowInternalError(i.tls, i.ctx, msgPtr, 0)
 	}
-
-	defer i.moduleCodeByte.mutex.Unlock()
-	i.moduleCodeByte.mutex.Lock()
-	i.moduleCodeByte.value[moduleName] = &codeByte
 
 	return i.LoadModuleBytecode(codeByte, QJSEvalLoadOnly(options.load_only))
 }

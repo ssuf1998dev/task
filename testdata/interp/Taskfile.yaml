@@ -10,39 +10,39 @@ tasks:
       B: "b"
       C: "c"
 
+    interp: "javascript"
+
     cmds:
       - cmd: print(1 + 2);
-        interp: "javascript"
 
       - cmd: |
           var hello = 'world';
           print(hello);
-        interp: "javascript"
 
       - cmd: |
           var A = '{{.A}}';
           print(A);
-        interp: "javascript"
 
       - cmd: |
           print(process.env.B + process.env.C);
         interp: "js"
 
   civet:
+    interp: "civet"
     cmds:
       - cmd: "1 + 2 |> print"
-        interp: "civet"
 
       - cmd: "[1,2,3] |> .map & * 2 |> print"
-        interp: "civet"
 
   var-js:
+    interp: "javascript"
     vars:
       SUM:
         sh: print(1 + 2)
-        interp: "javascript"
 
-    cmd: echo {{.SUM}}
+    cmds:
+      - cmd: echo {{.SUM}}
+        interp: sh
 
   var-civet:
     vars:

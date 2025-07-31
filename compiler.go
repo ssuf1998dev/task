@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/samber/lo"
+
 	"github.com/go-task/task/v3/experiments"
 	"github.com/go-task/task/v3/internal/env"
 	"github.com/go-task/task/v3/internal/execext"
@@ -82,7 +84,7 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 				return nil
 			}
 			// If the variable is dynamic, we need to resolve it first
-			static, err := c.HandleDynamicVar(newVar, dir, env.GetFromVars(result))
+			static, err := c.HandleDynamicVar(t, newVar, dir, env.GetFromVars(result))
 			if err != nil {
 				return err
 			}
@@ -146,7 +148,7 @@ func (c *Compiler) getVariables(t *ast.Task, call *Call, evaluateShVars bool) (*
 	return result, nil
 }
 
-func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, error) {
+func (c *Compiler) HandleDynamicVar(t *ast.Task, v ast.Var, dir string, e []string) (string, error) {
 	c.muDynamicCache.Lock()
 	defer c.muDynamicCache.Unlock()
 
@@ -169,7 +171,9 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, 
 
 	intp := "sh"
 	if experiments.Interp.Enabled() {
-		intp = v.Interp
+		intp = lo.FindOrElse([]string{
+			v.Interp, lo.TernaryF(t == nil, func() string { return "" }, func() string { return t.Interp }),
+		}, "sh", func(item string) bool { return len(item) != 0 })
 	}
 
 	var stdout bytes.Buffer

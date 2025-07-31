@@ -11,6 +11,8 @@ import (
 	"golang.org/x/sync/errgroup"
 	"mvdan.cc/sh/v3/interp"
 
+	"github.com/samber/lo"
+
 	"github.com/go-task/task/v3/errors"
 	"github.com/go-task/task/v3/experiments"
 	"github.com/go-task/task/v3/internal/env"
@@ -347,14 +349,16 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 
 		intp := "sh"
 		if experiments.Interp.Enabled() {
-			intp = cmd.Interp
+			intp = lo.FindOrElse([]string{
+				cmd.Interp, lo.TernaryF(t == nil, func() string { return "" }, func() string { return t.Interp }),
+			}, "sh", func(item string) bool { return len(item) != 0 })
 		}
 
 		switch intp {
 		case "javascript", "js", "civet":
 			err = js.NewJavaScriptInterpret(&js.JSOptions{
 				Script:  cmd.Cmd,
-				Dialect: cmd.Interp,
+				Dialect: intp,
 				Env:     env.GetMap(t),
 				Stdout:  stdOut,
 				Stderr:  stdErr,

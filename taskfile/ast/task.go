@@ -15,6 +15,7 @@ import (
 type Task struct {
 	Task          string
 	Cmds          []*Cmd
+	Interp        string
 	Deps          []*Dep
 	Label         string
 	Desc          string
@@ -112,6 +113,7 @@ func (t *Task) UnmarshalYAML(node *yaml.Node) error {
 		var task struct {
 			Cmds          []*Cmd
 			Cmd           *Cmd
+			Interp        string
 			Deps          []*Dep
 			Label         string
 			Desc          string
@@ -150,6 +152,7 @@ func (t *Task) UnmarshalYAML(node *yaml.Node) error {
 		} else {
 			t.Cmds = task.Cmds
 		}
+		t.Interp = task.Interp
 		t.Deps = task.Deps
 		t.Label = task.Label
 		t.Desc = task.Desc
@@ -191,6 +194,7 @@ func (t *Task) DeepCopy() *Task {
 	c := &Task{
 		Task:                 t.Task,
 		Cmds:                 deepcopy.Slice(t.Cmds),
+		Interp:               t.Interp,
 		Deps:                 deepcopy.Slice(t.Deps),
 		Label:                t.Label,
 		Desc:                 t.Desc,
