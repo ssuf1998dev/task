@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
-	"os"
 	"regexp"
 
 	"modernc.org/libc"
@@ -21,9 +20,7 @@ var ErrNilOptions = errors.New("js: nil options given")
 type JSOptions struct {
 	Script  string
 	Dialect string
-	Dir     string
 	Env     map[string]string
-	Stdin   io.Reader
 	Stdout  io.Writer
 	Stderr  io.Writer
 }
@@ -36,27 +33,21 @@ func (j *JavaScript) escape(s string) string {
 	return string(regexp.MustCompile("'").ReplaceAll([]byte(s), []byte("\\'")))
 }
 
-func (j *JavaScript) chdirScript(dir string) string {
-	if len(dir) <= 0 {
-		return ""
-	}
-	return fmt.Sprintf("(await import('os')).chdir('%s');", j.escape(dir))
-}
-
 func NewJavaScript() (*JavaScript, error) {
 	qjs, err := NewQuickJS()
 	if err != nil {
 		return nil, err
 	}
-
-	mod := qjs.LoadModule(fmt.Sprintf("export{compile};\n%s", civetJs), "civet")
-	if tag(mod) == libquickjs.EJS_TAG_EXCEPTION {
-		err = qjs.ExceptionToError()
-		return nil, err
-	}
-	defer libquickjs.XFreeValue(qjs.tls, qjs.ctx, mod)
-
 	return &JavaScript{qjs: qjs}, nil
+}
+
+func NewJavaScriptInterpret(opts *JSOptions) error {
+	j, err := NewJavaScript()
+	if err != nil {
+		return err
+	}
+	defer j.Close()
+	return j.Interpret(opts)
 }
 
 func (j *JavaScript) Interpret(opts *JSOptions) error {
@@ -64,10 +55,11 @@ func (j *JavaScript) Interpret(opts *JSOptions) error {
 		return ErrNilOptions
 	}
 
-	if dir, err := os.Getwd(); err == nil {
-		defer (func() {
-			_ = os.Chdir(dir)
-		})()
+	if opts.Stdout != nil {
+		j.qjs.Stdout = opts.Stdout
+	}
+	if opts.Stderr != nil {
+		j.qjs.Stderr = opts.Stderr
 	}
 
 	j.qjs.ProcessEnv(opts.Env)
@@ -76,6 +68,13 @@ func (j *JavaScript) Interpret(opts *JSOptions) error {
 
 	switch opts.Dialect {
 	case "civet":
+		mod := j.qjs.LoadModule(fmt.Sprintf("export{compile};\n%s", civetJs), "civet")
+		if tag(mod) == libquickjs.EJS_TAG_EXCEPTION {
+			err := j.qjs.ExceptionToError()
+			return err
+		}
+		defer libquickjs.XFreeValue(j.qjs.tls, j.qjs.ctx, mod)
+
 		code := j.escape(script)
 
 		js := j.qjs.Eval(fmt.Sprintf(
@@ -95,21 +94,12 @@ func (j *JavaScript) Interpret(opts *JSOptions) error {
 	default:
 	}
 
-	result := j.qjs.Eval(
-		fmt.Sprintf("(async()=>{%s%s})()", j.chdirScript(opts.Dir), script),
-		QJSEvalAwait(true),
-	)
-	json := libquickjs.XJS_JSONStringify(j.qjs.tls, j.qjs.ctx, result, JS_UNDEFINED, JS_UNDEFINED)
-	defer libquickjs.XFreeValue(j.qjs.tls, j.qjs.ctx, json)
-	if tag(json) == libquickjs.EJS_TAG_EXCEPTION {
+	result := j.qjs.Eval(script, QJSEvalAwait(true))
+	if tag(result) == libquickjs.EJS_TAG_EXCEPTION {
 		err := j.qjs.ExceptionToError()
 		_, _ = opts.Stderr.Write([]byte(err.Error() + "\n"))
 		return err
 	}
-
-	jsonPtr := libquickjs.XToCString(j.qjs.tls, j.qjs.ctx, json)
-	defer libquickjs.XJS_FreeCString(j.qjs.tls, j.qjs.ctx, jsonPtr)
-	_, _ = opts.Stdout.Write([]byte(libc.GoString(jsonPtr) + "\n"))
 
 	return nil
 }
