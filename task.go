@@ -346,15 +346,15 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
 
 		intp := "sh"
-		if experiments.Interpreter.Enabled() {
-			intp = cmd.Interpreter
+		if experiments.Interp.Enabled() {
+			intp = cmd.Interp
 		}
 
 		switch intp {
 		case "javascript", "js", "civet":
 			err = js.NewJavaScriptInterpret(&js.JSOptions{
 				Script:  cmd.Cmd,
-				Dialect: cmd.Interpreter,
+				Dialect: cmd.Interp,
 				Env:     env.GetMap(t),
 				Stdout:  stdOut,
 				Stderr:  stdErr,

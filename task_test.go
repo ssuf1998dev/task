@@ -1883,10 +1883,10 @@ task-1 ran successfully
 	assert.Contains(t, buff.String(), "child task deferred value-from-parent")
 }
 
-func TestInterpreterCmds(t *testing.T) { // nolint:paralleltest // cannot run in parallel
-	enableExperimentForTest(t, &experiments.Interpreter, 1)
+func TestInterpCmds(t *testing.T) { // nolint:paralleltest // cannot run in parallel
+	enableExperimentForTest(t, &experiments.Interp, 1)
 
-	const dir = "testdata/interpreter"
+	const dir = "testdata/interp"
 	var buff bytes.Buffer
 	e := task.NewExecutor(
 		task.WithDir(dir),
@@ -1923,10 +1923,10 @@ task: [civet] [1,2,3] |> .map & * 2 |> print
 	assert.Contains(t, buff.String(), output)
 }
 
-func TestInterpreterVars(t *testing.T) { // nolint:paralleltest // cannot run in parallel
-	enableExperimentForTest(t, &experiments.Interpreter, 1)
+func TestInterpVars(t *testing.T) { // nolint:paralleltest // cannot run in parallel
+	enableExperimentForTest(t, &experiments.Interp, 1)
 
-	const dir = "testdata/interpreter"
+	const dir = "testdata/interp"
 	var buff bytes.Buffer
 	e := task.NewExecutor(
 		task.WithDir(dir),

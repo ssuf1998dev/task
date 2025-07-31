@@ -168,8 +168,8 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, 
 	}
 
 	intp := "sh"
-	if experiments.Interpreter.Enabled() {
-		intp = v.Interpreter
+	if experiments.Interp.Enabled() {
+		intp = v.Interp
 	}
 
 	var stdout bytes.Buffer

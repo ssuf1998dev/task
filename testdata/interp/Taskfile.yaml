@@ -12,35 +12,35 @@ tasks:
 
     cmds:
       - cmd: print(1 + 2);
-        interpreter: "javascript"
+        interp: "javascript"
 
       - cmd: |
           var hello = 'world';
           print(hello);
-        interpreter: "javascript"
+        interp: "javascript"
 
       - cmd: |
           var A = '{{.A}}';
           print(A);
-        interpreter: "javascript"
+        interp: "javascript"
 
       - cmd: |
           print(process.env.B + process.env.C);
-        interpreter: "js"
+        interp: "js"
 
   civet:
     cmds:
       - cmd: "1 + 2 |> print"
-        interpreter: "civet"
+        interp: "civet"
 
       - cmd: "[1,2,3] |> .map & * 2 |> print"
-        interpreter: "civet"
+        interp: "civet"
 
   var-js:
     vars:
       SUM:
         sh: print(1 + 2)
-        interpreter: "javascript"
+        interp: "javascript"
 
     cmd: echo {{.SUM}}
 
@@ -48,6 +48,6 @@ tasks:
     vars:
       SUM:
         sh: "[1,2,3].reduce (+) |> print"
-        interpreter: "civet"
+        interp: "civet"
 
     cmd: echo {{.SUM}}
