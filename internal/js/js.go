@@ -81,7 +81,17 @@ func (j *JavaScript) Interpret(opts *JSOptions) error {
 			defer opts.ModuleCache.mutex.Unlock()
 			opts.ModuleCache.mutex.Lock()
 			cache, ok := opts.ModuleCache.Value["civet"]
-			mod = j.qjs.LoadModule(fmt.Sprintf("export{compile};\n%s", civetJs), "civet", lo.Ternary(ok, &cache, nil))
+			var cachePtr *[]byte
+			mod, cachePtr = j.qjs.LoadModule(
+				fmt.Sprintf("export{compile};\n%s", civetJs),
+				"civet",
+				lo.TernaryF(ok, func() *[]byte { return &cache }, func() *[]byte { return nil }),
+			)
+			if cachePtr != nil {
+				opts.ModuleCache.Value["civet"] = *cachePtr
+			}
+		} else {
+			mod, _ = j.qjs.LoadModule(fmt.Sprintf("export{compile};\n%s", civetJs), "civet", nil)
 		}
 		if tag(mod) == libquickjs.EJS_TAG_EXCEPTION {
 			err := j.qjs.ExceptionToError()

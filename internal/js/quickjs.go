@@ -206,7 +206,7 @@ func (i *QuickJS) ProcessEnv(env map[string]string) {
 	libquickjs.XJS_SetPropertyStr(i.tls, i.ctx, g, processNamePtr, process)
 }
 
-func (i *QuickJS) LoadModule(code string, moduleName string, cache *[]byte, opts ...QJSEvalOption) libquickjs.TJSValue {
+func (i *QuickJS) LoadModule(code string, moduleName string, cache *[]byte, opts ...QJSEvalOption) (libquickjs.TJSValue, *[]byte) {
 	options := QJSEvalOptions{
 		load_only: false,
 	}
@@ -224,24 +224,24 @@ func (i *QuickJS) LoadModule(code string, moduleName string, cache *[]byte, opts
 	if libquickjs.XJS_DetectModule(i.tls, ptr, libquickjs.Tsize_t(len(code))) == 0 {
 		msgPtr := lo.Must(libc.CString(fmt.Sprintf("not a module: %s", moduleName)))
 		defer libc.Xfree(i.tls, msgPtr)
-		return libquickjs.XJS_ThrowSyntaxError(i.tls, i.ctx, msgPtr, 0)
+		return libquickjs.XJS_ThrowSyntaxError(i.tls, i.ctx, msgPtr, 0), nil
 	}
 
 	codeByte, err := i.Compile(code, QJSEvalFlagModule(true), QJSEvalFlagCompileOnly(true), QJSEvalFileName(moduleName))
 	if err != nil {
 		msgPtr := lo.Must(libc.CString(err.Error()))
 		defer libc.Xfree(i.tls, msgPtr)
-		return libquickjs.XJS_ThrowInternalError(i.tls, i.ctx, msgPtr, 0)
+		return libquickjs.XJS_ThrowInternalError(i.tls, i.ctx, msgPtr, 0), nil
 	}
 
 	return i.LoadModuleBytecode(codeByte, QJSEvalLoadOnly(options.load_only))
 }
 
-func (i *QuickJS) LoadModuleBytecode(buf []byte, opts ...QJSEvalOption) libquickjs.TJSValue {
+func (i *QuickJS) LoadModuleBytecode(buf []byte, opts ...QJSEvalOption) (libquickjs.TJSValue, *[]byte) {
 	if len(buf) == 0 {
 		msgPtr := lo.Must(libc.CString("empty bytecode"))
 		defer libc.Xfree(i.tls, msgPtr)
-		return libquickjs.XJS_ThrowSyntaxError(i.tls, i.ctx, msgPtr, 0)
+		return libquickjs.XJS_ThrowSyntaxError(i.tls, i.ctx, msgPtr, 0), nil
 	}
 
 	obj := libquickjs.XJS_ReadObject(
@@ -253,7 +253,7 @@ func (i *QuickJS) LoadModuleBytecode(buf []byte, opts ...QJSEvalOption) libquick
 	)
 
 	if tag(obj) == int32(libquickjs.EJS_TAG_EXCEPTION) {
-		return obj
+		return obj, nil
 	}
 
 	options := QJSEvalOptions{}
@@ -265,7 +265,7 @@ func (i *QuickJS) LoadModuleBytecode(buf []byte, opts ...QJSEvalOption) libquick
 		if tag(obj) == int32(libquickjs.EJS_TAG_MODULE) {
 			libquickjs.Xjs_module_set_import_meta(i.tls, i.ctx, obj, 0, 0)
 		}
-		return obj
+		return obj, &buf
 	} else {
 		if tag(obj) == int32(libquickjs.EJS_TAG_MODULE) {
 			if libquickjs.XJS_ResolveModule(i.tls, i.ctx, obj) < 0 {
@@ -273,13 +273,13 @@ func (i *QuickJS) LoadModuleBytecode(buf []byte, opts ...QJSEvalOption) libquick
 
 				msgPtr := lo.Must(libc.CString("can not resolve this module"))
 				defer libc.Xfree(i.tls, msgPtr)
-				return libquickjs.XJS_ThrowSyntaxError(i.tls, i.ctx, msgPtr, 0)
+				return libquickjs.XJS_ThrowSyntaxError(i.tls, i.ctx, msgPtr, 0), &buf
 			}
 
 			libquickjs.Xjs_module_set_import_meta(i.tls, i.ctx, obj, 0, 0)
-			return libquickjs.Xjs_std_await(i.tls, i.ctx, libquickjs.XJS_EvalFunction(i.tls, i.ctx, obj))
+			return libquickjs.Xjs_std_await(i.tls, i.ctx, libquickjs.XJS_EvalFunction(i.tls, i.ctx, obj)), &buf
 		} else {
-			return libquickjs.XJS_EvalFunction(i.tls, i.ctx, obj)
+			return libquickjs.XJS_EvalFunction(i.tls, i.ctx, obj), &buf
 		}
 	}
 }
