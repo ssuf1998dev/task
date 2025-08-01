@@ -7,10 +7,9 @@ import (
 	"regexp"
 	"sync"
 
+	"github.com/samber/lo"
 	"modernc.org/libc"
 	"modernc.org/libquickjs"
-
-	"github.com/samber/lo"
 
 	"github.com/go-task/task/v3/errors"
 )

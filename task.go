@@ -8,10 +8,9 @@ import (
 	"slices"
 	"sync/atomic"
 
+	"github.com/samber/lo"
 	"golang.org/x/sync/errgroup"
 	"mvdan.cc/sh/v3/interp"
-
-	"github.com/samber/lo"
 
 	"github.com/go-task/task/v3/errors"
 	"github.com/go-task/task/v3/experiments"
