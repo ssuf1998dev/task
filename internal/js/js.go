@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"sync"
 
 	"modernc.org/libc"
 	"modernc.org/libquickjs"
+
+	"github.com/samber/lo"
 
 	"github.com/go-task/task/v3/errors"
 )
@@ -17,12 +20,18 @@ var civetJs string
 
 var ErrNilOptions = errors.New("js: nil options given")
 
+type ModuleCacheMap struct {
+	Value map[string][]byte
+	mutex sync.RWMutex
+}
+
 type JSOptions struct {
-	Script  string
-	Dialect string
-	Env     map[string]string
-	Stdout  io.Writer
-	Stderr  io.Writer
+	Script      string
+	Dialect     string
+	Env         map[string]string
+	Stdout      io.Writer
+	Stderr      io.Writer
+	ModuleCache *ModuleCacheMap
 }
 
 type JavaScript struct {
@@ -68,7 +77,13 @@ func (j *JavaScript) Interpret(opts *JSOptions) error {
 
 	switch opts.Dialect {
 	case "civet":
-		mod := j.qjs.LoadModule(fmt.Sprintf("export{compile};\n%s", civetJs), "civet")
+		var mod libquickjs.TJSValue
+		if opts.ModuleCache != nil {
+			defer opts.ModuleCache.mutex.Unlock()
+			opts.ModuleCache.mutex.Lock()
+			cache, ok := opts.ModuleCache.Value["civet"]
+			mod = j.qjs.LoadModule(fmt.Sprintf("export{compile};\n%s", civetJs), "civet", lo.Ternary(ok, &cache, nil))
+		}
 		if tag(mod) == libquickjs.EJS_TAG_EXCEPTION {
 			err := j.qjs.ExceptionToError()
 			return err

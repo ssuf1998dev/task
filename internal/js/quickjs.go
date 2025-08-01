@@ -206,12 +206,16 @@ func (i *QuickJS) ProcessEnv(env map[string]string) {
 	libquickjs.XJS_SetPropertyStr(i.tls, i.ctx, g, processNamePtr, process)
 }
 
-func (i *QuickJS) LoadModule(code string, moduleName string, opts ...QJSEvalOption) libquickjs.TJSValue {
+func (i *QuickJS) LoadModule(code string, moduleName string, cache *[]byte, opts ...QJSEvalOption) libquickjs.TJSValue {
 	options := QJSEvalOptions{
 		load_only: false,
 	}
 	for _, fn := range opts {
 		fn(&options)
+	}
+
+	if cache != nil {
+		return i.LoadModuleBytecode(*cache, QJSEvalLoadOnly(options.load_only))
 	}
 
 	ptr := lo.Must(libc.CString(code))

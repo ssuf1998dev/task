@@ -211,12 +211,13 @@ func (e *Executor) setupCompiler() error {
 	}
 
 	e.Compiler = &Compiler{
-		Dir:            e.Dir,
-		Entrypoint:     e.Entrypoint,
-		UserWorkingDir: e.UserWorkingDir,
-		TaskfileEnv:    e.Taskfile.Env,
-		TaskfileVars:   e.Taskfile.Vars,
-		Logger:         e.Logger,
+		Dir:             e.Dir,
+		Entrypoint:      e.Entrypoint,
+		UserWorkingDir:  e.UserWorkingDir,
+		TaskfileEnv:     e.Taskfile.Env,
+		TaskfileVars:    e.Taskfile.Vars,
+		Logger:          e.Logger,
+		jsExModuleCache: e.jsModuleCache,
 	}
 	return nil
 }

@@ -73,7 +73,7 @@ func TestLoadModule(t *testing.T) {
 	var buff bytes.Buffer
 	qjs.Stdout = &buff
 
-	qjs.LoadModule("export const foo = 'bar'", "foo")
+	qjs.LoadModule("export const foo = 'bar'", "foo", nil)
 	qjs.Eval("import {foo} from 'foo';print(foo);", QJSEvalAwait(true))
 	assert.Contains(t, buff.String(), "bar")
 }

@@ -357,11 +357,12 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		switch intp {
 		case "javascript", "js", "civet":
 			err = js.NewJavaScriptInterpret(&js.JSOptions{
-				Script:  cmd.Cmd,
-				Dialect: intp,
-				Env:     env.GetMap(t),
-				Stdout:  stdOut,
-				Stderr:  stdErr,
+				Script:      cmd.Cmd,
+				Dialect:     intp,
+				Env:         env.GetMap(t),
+				Stdout:      stdOut,
+				Stderr:      stdErr,
+				ModuleCache: e.jsModuleCache,
 			})
 		default:
 			err = execext.RunCommand(ctx, &execext.RunCommandOptions{
