@@ -35,7 +35,7 @@ type Compiler struct {
 	dynamicCache   map[string]string
 	muDynamicCache sync.Mutex
 
-	jsModuleCache *js.ModuleCacheMap
+	// jsModuleCache *js.ModuleCacheMap
 }
 
 func (c *Compiler) GetTaskfileVariables() (*ast.Vars, error) {
@@ -187,12 +187,12 @@ func (c *Compiler) HandleDynamicVar(t *ast.Task, v ast.Var, dir string, e []stri
 			env[parts[0]] = parts[1]
 		}
 		opts := &js.JSOptions{
-			Script:      *v.Sh,
-			Dialect:     intp,
-			Env:         env,
-			Stdout:      &stdout,
-			Stderr:      c.Logger.Stderr,
-			ModuleCache: c.jsModuleCache,
+			Script:  *v.Sh,
+			Dialect: intp,
+			Env:     env,
+			Stdout:  &stdout,
+			Stderr:  c.Logger.Stderr,
+			// ModuleCache: c.jsModuleCache,
 		}
 		if err := js.NewJavaScriptInterpret(opts); err != nil {
 			return "", fmt.Errorf(`task: Script "%s" failed: %s`, opts.Script, err)

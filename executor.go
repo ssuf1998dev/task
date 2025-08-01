@@ -10,7 +10,6 @@ import (
 	"github.com/puzpuzpuz/xsync/v3"
 	"github.com/sajari/fuzzy"
 
-	"github.com/go-task/task/v3/internal/js"
 	"github.com/go-task/task/v3/internal/logger"
 	"github.com/go-task/task/v3/internal/output"
 	"github.com/go-task/task/v3/internal/sort"
@@ -73,7 +72,7 @@ type (
 		executionHashesMutex sync.Mutex
 		watchedDirs          *xsync.MapOf[string, bool]
 
-		jsModuleCache *js.ModuleCacheMap
+		// jsModuleCache *js.ModuleCacheMap
 	}
 	TempDir struct {
 		Remote      string
@@ -101,7 +100,7 @@ func NewExecutor(opts ...ExecutorOption) *Executor {
 		mkdirMutexMap:        map[string]*sync.Mutex{},
 		executionHashes:      map[string]context.Context{},
 		executionHashesMutex: sync.Mutex{},
-		jsModuleCache:        &js.ModuleCacheMap{Value: map[string][]byte{}},
+		// jsModuleCache:        &js.ModuleCacheMap{Value: map[string][]byte{}},
 	}
 	e.Options(opts...)
 	return e

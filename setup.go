@@ -217,7 +217,7 @@ func (e *Executor) setupCompiler() error {
 		TaskfileEnv:    e.Taskfile.Env,
 		TaskfileVars:   e.Taskfile.Vars,
 		Logger:         e.Logger,
-		jsModuleCache:  e.jsModuleCache,
+		// jsModuleCache:  e.jsModuleCache,
 	}
 	return nil
 }
