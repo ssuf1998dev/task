@@ -22,11 +22,6 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: prepare
-        run: |
-          mkdir -p internal/js/civet/Civet/dist
-          touch internal/js/civet/Civet/dist/quickjs.min.mjs
-
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:

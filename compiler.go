@@ -13,7 +13,6 @@ import (
 	"github.com/go-task/task/v3/internal/env"
 	"github.com/go-task/task/v3/internal/execext"
 	"github.com/go-task/task/v3/internal/filepathext"
-	"github.com/go-task/task/v3/internal/js"
 	"github.com/go-task/task/v3/internal/logger"
 	"github.com/go-task/task/v3/internal/templater"
 	"github.com/go-task/task/v3/internal/version"
@@ -32,8 +31,6 @@ type Compiler struct {
 
 	dynamicCache   map[string]string
 	muDynamicCache sync.Mutex
-
-	js *js.JavaScript
 }
 
 func (c *Compiler) GetTaskfileVariables() (*ast.Vars, error) {
@@ -177,22 +174,23 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, 
 	var stdout bytes.Buffer
 	switch intp {
 	case "javascript", "js", "civet":
-		env := map[string]string{}
-		for _, v := range e {
-			parts := strings.Split(v, "=")
-			env[parts[0]] = parts[1]
-		}
-		opts := &js.JSOptions{
-			Script:  *v.Sh,
-			Dialect: intp,
-			Dir:     dir,
-			Env:     env,
-			Stdout:  &stdout,
-			Stderr:  c.Logger.Stderr,
-		}
-		if err := c.js.Interpret(opts); err != nil {
-			return "", fmt.Errorf(`task: Script "%s" failed: %s`, opts.Script, err)
-		}
+		// env := map[string]string{}
+		// for _, v := range e {
+		// 	parts := strings.Split(v, "=")
+		// 	env[parts[0]] = parts[1]
+		// }
+		// opts := &js.JSOptions{
+		// 	Script:  *v.Sh,
+		// 	Dialect: intp,
+		// 	Dir:     dir,
+		// 	Env:     env,
+		// 	Stdout:  &stdout,
+		// 	Stderr:  c.Logger.Stderr,
+		// }
+		// if err := c.js.Interpret(opts); err != nil {
+		// 	return "", fmt.Errorf(`task: Script "%s" failed: %s`, opts.Script, err)
+		// }
+		return "", fmt.Errorf("not supported")
 	default:
 		opts := &execext.RunCommandOptions{
 			Command: *v.Sh,

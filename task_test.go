@@ -1885,6 +1885,8 @@ task-1 ran successfully
 }
 
 func TestInterpreterCmds(t *testing.T) { // nolint:paralleltest // cannot run in parallel
+	t.Skip()
+
 	enableExperimentForTest(t, &experiments.Interpreter, 1)
 
 	cwd := lo.Must(os.Getwd())
@@ -1929,6 +1931,8 @@ task: [civet] return [1,2,3] |> .map & * 2
 }
 
 func TestInterpreterVars(t *testing.T) { // nolint:paralleltest // cannot run in parallel
+	t.Skip()
+
 	enableExperimentForTest(t, &experiments.Interpreter, 1)
 
 	cwd := lo.Must(os.Getwd())

@@ -23,12 +23,6 @@ jobs:
           go-version: ${{matrix.go-version}}
         id: go
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-        id: nodejs
-
       - name: Set git to use LF
         run: |
           git config --global core.autocrlf false
@@ -41,17 +35,6 @@ jobs:
         run: go mod download
         env:
           GOPROXY: https://proxy.golang.org
-
-      - name: Build civet for interpreting
-        working-directory: internal/js/civet
-        run: |
-          git submodule init
-          git submodule update
-          cd Civet
-          git apply ../build.patch
-          yarn install
-          yarn build
-          yarn terser dist/quickjs.mjs --compress --mangle --ecma 2015 --output dist/quickjs.min.mjs
 
       - name: Build
         run: go build -o ./bin/task -v ./cmd/task

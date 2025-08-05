@@ -54,8 +54,8 @@ tasks:
     desc: Runs tests and generates golden fixture files
     aliases: [gen:fixtures, g:fixtures]
     env:
-      GOLDIE_UPDATE: 'true'
-      GOLDIE_TEMPLATE: 'true'
+      GOLDIE_UPDATE: "true"
+      GOLDIE_TEMPLATE: "true"
     cmds:
       - find ./testdata -name '*.golden' -delete
       - go test ./...
@@ -227,19 +227,3 @@ tasks:
     desc: Publish release to npm
     cmds:
       - npm publish --access=public
-
-  js:civet:
-    desc: Build civet for interpreting.
-    dir: internal/js/civet
-    cmd: |
-      git submodule init
-      git submodule update
-      cd Civet
-      git apply ../build.patch
-      yarn install
-      yarn build
-      yarn terser dist/quickjs.mjs --compress --mangle --ecma 2015 --output dist/quickjs.min.mjs
-    preconditions:
-      - command -v node
-      - command -v yarn
-      - command -v git
