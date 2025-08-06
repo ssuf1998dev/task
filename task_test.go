@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/samber/lo"
 	"github.com/sebdah/goldie/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1884,83 +1883,83 @@ task-1 ran successfully
 	assert.Contains(t, buff.String(), "child task deferred value-from-parent")
 }
 
-func TestInterpreterCmds(t *testing.T) { // nolint:paralleltest // cannot run in parallel
-	t.Skip()
+// func TestInterpreterCmds(t *testing.T) { // nolint:paralleltest // cannot run in parallel
+// 	t.Skip()
 
-	enableExperimentForTest(t, &experiments.Interpreter, 1)
+// 	enableExperimentForTest(t, &experiments.Interpreter, 1)
 
-	cwd := lo.Must(os.Getwd())
+// 	cwd := lo.Must(os.Getwd())
 
-	const dir = "testdata/interpreter"
-	var buff bytes.Buffer
-	e := task.NewExecutor(
-		task.WithDir(dir),
-		task.WithStdout(&buff),
-		task.WithStderr(&buff),
-	)
-	require.NoError(t, e.Setup())
+// 	const dir = "testdata/interpreter"
+// 	var buff bytes.Buffer
+// 	e := task.NewExecutor(
+// 		task.WithDir(dir),
+// 		task.WithStdout(&buff),
+// 		task.WithStderr(&buff),
+// 	)
+// 	require.NoError(t, e.Setup())
 
-	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "js"}))
-	output := strings.TrimSpace(`
-task: [js] return 1 + 2;
-3
-task: [js] var hello = 'world';
-return hello;
+// 	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "js"}))
+// 	output := strings.TrimSpace(`
+// task: [js] return 1 + 2;
+// 3
+// task: [js] var hello = 'world';
+// return hello;
 
-"world"
-task: [js] var A = 'a';
-return A;
+// "world"
+// task: [js] var A = 'a';
+// return A;
 
-"a"
-task: [js] return process.env.B + process.env.C;
+// "a"
+// task: [js] return process.env.B + process.env.C;
 
-"bc"
-`)
-	assert.Contains(t, buff.String(), output)
+// "bc"
+// `)
+// 	assert.Contains(t, buff.String(), output)
 
-	buff.Reset()
-	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "civet"}))
-	output = strings.TrimSpace(`
-task: [civet] return 1 + 2
-3
-task: [civet] return [1,2,3] |> .map & * 2
-[2,4,6]`)
-	assert.Contains(t, buff.String(), output)
+// 	buff.Reset()
+// 	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "civet"}))
+// 	output = strings.TrimSpace(`
+// task: [civet] return 1 + 2
+// 3
+// task: [civet] return [1,2,3] |> .map & * 2
+// [2,4,6]`)
+// 	assert.Contains(t, buff.String(), output)
 
-	assert.Equal(t, cwd, lo.Must(os.Getwd()))
-}
+// 	assert.Equal(t, cwd, lo.Must(os.Getwd()))
+// }
 
-func TestInterpreterVars(t *testing.T) { // nolint:paralleltest // cannot run in parallel
-	t.Skip()
+// func TestInterpreterVars(t *testing.T) { // nolint:paralleltest // cannot run in parallel
+// 	t.Skip()
 
-	enableExperimentForTest(t, &experiments.Interpreter, 1)
+// 	enableExperimentForTest(t, &experiments.Interpreter, 1)
 
-	cwd := lo.Must(os.Getwd())
+// 	cwd := lo.Must(os.Getwd())
 
-	const dir = "testdata/interpreter"
-	var buff bytes.Buffer
-	e := task.NewExecutor(
-		task.WithDir(dir),
-		task.WithStdout(&buff),
-		task.WithStderr(&buff),
-	)
-	require.NoError(t, e.Setup())
+// 	const dir = "testdata/interpreter"
+// 	var buff bytes.Buffer
+// 	e := task.NewExecutor(
+// 		task.WithDir(dir),
+// 		task.WithStdout(&buff),
+// 		task.WithStderr(&buff),
+// 	)
+// 	require.NoError(t, e.Setup())
 
-	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "var-js"}))
-	output := strings.TrimSpace(`
-task: [var-js] echo 3
-3`)
-	assert.Contains(t, buff.String(), output)
+// 	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "var-js"}))
+// 	output := strings.TrimSpace(`
+// task: [var-js] echo 3
+// 3`)
+// 	assert.Contains(t, buff.String(), output)
 
-	buff.Reset()
-	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "var-civet"}))
-	output = strings.TrimSpace(`
-task: [var-civet] echo 6
-6`)
-	assert.Contains(t, buff.String(), output)
+// 	buff.Reset()
+// 	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "var-civet"}))
+// 	output = strings.TrimSpace(`
+// task: [var-civet] echo 6
+// 6`)
+// 	assert.Contains(t, buff.String(), output)
 
-	assert.Equal(t, cwd, lo.Must(os.Getwd()))
-}
+// 	assert.Equal(t, cwd, lo.Must(os.Getwd()))
+// }
 
 func TestExitCodeZero(t *testing.T) {
 	t.Parallel()

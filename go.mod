@@ -23,7 +23,6 @@ require (
 	github.com/otiai10/copy v1.14.1
 	github.com/puzpuzpuz/xsync/v3 v3.5.1
 	github.com/sajari/fuzzy v1.0.0
-	github.com/samber/lo v1.51.0
 	github.com/sebdah/goldie/v2 v2.7.1
 	github.com/spf13/pflag v1.0.7
 	github.com/stretchr/testify v1.10.0
@@ -66,7 +65,6 @@ require (
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
-	golang.org/x/text v0.24.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
