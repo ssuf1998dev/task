@@ -231,6 +231,6 @@ tasks:
   qjs:
     desc: Download latest qjs.wasm
     dir: internal/js
-    cmd: wget -nv https://github.com/ssuf1998dev/task-quickjs-ng/releases/latest/download/qjs.wasm
+    cmd: wget -nv -O qjs.wasm https://github.com/ssuf1998dev/task-quickjs-ng/releases/latest/download/qjs.wasm
     preconditions:
       - command -v wget
