@@ -88,13 +88,6 @@ func (e *Executor) readTaskfile(node taskfile.Node) error {
 			return err
 		}
 	}
-	if experiments.Interpreter.Enabled() {
-		// if js, err := js.NewJavaScript(); err != nil {
-		// 	return err
-		// } else {
-		// 	e.js = js
-		// }
-	}
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return &errors.TaskfileNetworkTimeoutError{URI: node.Location(), Timeout: e.Timeout}
@@ -224,6 +217,7 @@ func (e *Executor) setupCompiler() error {
 		TaskfileEnv:    e.Taskfile.Env,
 		TaskfileVars:   e.Taskfile.Vars,
 		Logger:         e.Logger,
+		js:             e.js,
 	}
 	return nil
 }

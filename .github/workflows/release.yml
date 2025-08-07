@@ -19,6 +19,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Download latest qjs.wasm
+        working-directory: internal/js
+        run: wget -nv -O qjs.wasm https://github.com/ssuf1998dev/task-quickjs-ng/releases/latest/download/qjs.wasm
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:

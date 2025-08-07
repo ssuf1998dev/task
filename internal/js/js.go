@@ -6,59 +6,42 @@ import (
 	"crypto/rand"
 	_ "embed"
 	"fmt"
+	"io"
 	"os"
-	"sync"
 
 	extism "github.com/extism/go-sdk"
 	"github.com/tetratelabs/wazero"
 )
 
-const (
-	DIALECT_NONE  = 0
-	DIALECT_CIVET = 1
-)
-
 //go:embed qjs.wasm
 var qjswasm []byte
 
-type JavaScriptWorker struct {
-	ctx    context.Context
+type JavaScript struct {
 	plugin *extism.Plugin
+	stdin  *bytes.Buffer
 	stdout *bytes.Buffer
 	stderr *bytes.Buffer
 }
 
-func (w *JavaScriptWorker) Eval(input string, dialect int) (string, string, error) {
-	cwd, _ := os.Getwd()
-	w.plugin.Call("eval", fmt.Appendf(nil, "import * as os from 'qjs:os';os.chdir('%s');", cwd))
-
-	switch dialect {
-	case DIALECT_CIVET:
-		w.plugin.Config["eval.dialect"] = "civet"
-	default:
-		w.plugin.Config["eval.dialect"] = "javascript"
-	}
-	exit, out, err := w.plugin.Call("eval", []byte(input))
-	if err != nil {
-		return "", "", err
-	}
-	if exit > 0 {
-		return "", "", fmt.Errorf("exit with code %d", exit)
-	}
-	return string(out), w.stdout.String(), nil
+type JSEvalOptions struct {
+	Script  string
+	Dialect string
+	Dir     string
+	Stdin   io.Reader
+	Stdout  io.Writer
+	Stderr  io.Writer
 }
 
-type JavaScriptPool struct {
-	ctx context.Context
-	sync.Pool
-	plugin *extism.CompiledPlugin
-	cache  *wazero.CompilationCache
-}
+var (
+	ctx            context.Context
+	cache          wazero.CompilationCache
+	compiledPlugin *extism.CompiledPlugin
+)
 
-func NewJavaScriptPool() (*JavaScriptPool, error) {
-	ctx := context.Background()
+func init() {
+	ctx = context.Background()
 
-	cache := wazero.NewCompilationCache()
+	cache = wazero.NewCompilationCache()
 
 	mft := extism.Manifest{
 		Wasm:   []extism.Wasm{extism.WasmData{Data: qjswasm}},
@@ -68,51 +51,82 @@ func NewJavaScriptPool() (*JavaScriptPool, error) {
 		EnableWasi:    true,
 		RuntimeConfig: wazero.NewRuntimeConfig().WithCompilationCache(cache),
 	}
-	plugin, err := extism.NewCompiledPlugin(ctx, mft, config, []extism.HostFunction{})
+	compiledPlugin, _ = extism.NewCompiledPlugin(ctx, mft, config, []extism.HostFunction{})
+}
+
+func NewJavaScript() (*JavaScript, error) {
+	if compiledPlugin == nil {
+		return nil, fmt.Errorf("js: init failed")
+	}
+	var stdin bytes.Buffer
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	plugin, err := compiledPlugin.Instance(ctx, extism.PluginInstanceConfig{
+		ModuleConfig: wazero.NewModuleConfig().
+			WithRandSource(rand.Reader).
+			WithFSConfig(wazero.NewFSConfig().WithDirMount("/", "/")).
+			WithSysNanosleep().
+			WithSysNanotime().
+			WithSysWalltime().
+			WithStdin(&stdin).
+			WithStdout(&stdout).
+			WithStderr(&stderr),
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	p := &JavaScriptPool{
-		ctx: ctx,
-		Pool: sync.Pool{
-			New: func() any {
-				var stdout bytes.Buffer
-				var stderr bytes.Buffer
-				inst, err := plugin.Instance(ctx, extism.PluginInstanceConfig{
-					ModuleConfig: wazero.NewModuleConfig().
-						WithRandSource(rand.Reader).
-						WithFSConfig(wazero.NewFSConfig().WithDirMount("/", "/")).
-						WithSysNanosleep().
-						WithSysNanotime().
-						WithSysWalltime().
-						WithStdout(&stdout).
-						WithStderr(&stderr),
-				})
-				if err != nil {
-					return err
-				}
-				_, _, err = inst.Call("warmup", nil)
-				if err != nil {
-					inst.Close(ctx)
-					return err
-				}
-				return &JavaScriptWorker{
-					ctx:    ctx,
-					plugin: inst,
-					stdout: &stdout,
-					stderr: &stderr,
-				}
-			},
-		},
-		plugin: plugin,
-		cache:  &cache,
+	_, _, err = plugin.Call("warmup", nil)
+	if err != nil {
+		plugin.Close(ctx)
+		return nil, err
 	}
 
-	return p, nil
+	return &JavaScript{
+		plugin: plugin,
+		stdin:  &stdin,
+		stdout: &stdout,
+		stderr: &stderr,
+	}, nil
 }
 
-func (p *JavaScriptPool) Close() {
-	(*p.cache).Close(p.ctx)
-	p.plugin.Close(p.ctx)
+func (js *JavaScript) Close() {
+	js.stdout.Reset()
+	js.stderr.Reset()
+	js.plugin.Close(ctx)
+}
+
+func (js *JavaScript) Eval(options *JSEvalOptions) (string, error) {
+	if options == nil {
+		return "", fmt.Errorf("js: nil options given")
+	}
+
+	js.stdout.Reset()
+	js.stderr.Reset()
+
+	dir, _ := os.Getwd()
+	if len(options.Dir) != 0 {
+		dir = options.Dir
+	}
+	js.plugin.Call("eval", fmt.Appendf(nil, "import * as os from 'qjs:os';os.chdir('%s');", dir))
+
+	js.plugin.Config["eval.dialect"] = options.Dialect
+
+	if options.Stdin != nil {
+		options.Stdin.Read(js.stdin.Bytes())
+	}
+
+	exit, _, err := js.plugin.Call("eval", []byte(options.Script))
+	if err != nil {
+		return "", err
+	}
+	if exit > 0 {
+		return "", fmt.Errorf("js: unknown error, exit with code %d", exit)
+	}
+	if options.Stdout != nil {
+		options.Stdout.Write(js.stdout.Bytes())
+	}
+	if options.Stderr != nil {
+		options.Stderr.Write(js.stderr.Bytes())
+	}
+	return js.stdout.String(), nil
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/go-task/task/v3/internal/env"
 	"github.com/go-task/task/v3/internal/execext"
 	"github.com/go-task/task/v3/internal/fingerprint"
+	"github.com/go-task/task/v3/internal/js"
 	"github.com/go-task/task/v3/internal/logger"
 	"github.com/go-task/task/v3/internal/output"
 	"github.com/go-task/task/v3/internal/slicesext"
@@ -345,22 +346,21 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
 
 		intp := "sh"
-		if experiments.Interpreter.Enabled() {
-			intp = cmd.Interpreter
+		if experiments.Interp.Enabled() {
+			intp = cmd.Interp
 		}
 
 		switch intp {
 		case "javascript", "js", "civet":
-			// err = e.js.Interpret(&js.JSOptions{
-			// 	Script:  cmd.Cmd,
-			// 	Dialect: cmd.Interpreter,
-			// 	Dir:     t.Dir,
-			// 	Env:     env.GetMap(t),
-			// 	Stdin:   e.Stdin,
-			// 	Stdout:  stdOut,
-			// 	Stderr:  stdErr,
-			// })
-			err = fmt.Errorf("not supported")
+			_, err = e.js.Eval(&js.JSEvalOptions{
+				Script:  cmd.Cmd,
+				Dialect: intp,
+				Dir:     t.Dir,
+				// 	Env:     env.GetMap(t),
+				Stdin:  e.Stdin,
+				Stdout: stdOut,
+				Stderr: stdErr,
+			})
 		default:
 			err = execext.RunCommand(ctx, &execext.RunCommandOptions{
 				Command:   cmd.Cmd,
