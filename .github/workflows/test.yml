@@ -36,9 +36,12 @@ jobs:
         env:
           GOPROXY: https://proxy.golang.org
 
-      - name: Download latest qjs.wasm
-        working-directory: internal/js
-        run: wget -nv -O qjs.wasm https://github.com/ssuf1998dev/task-quickjs-ng/releases/latest/download/qjs.wasm
+      - uses: robinraju/release-downloader@v1
+        with:
+          repository: "ssuf1998dev/task-quickjs-ng"
+          latest: true
+          fileName: "qjs.wasm"
+          out-file-path: "internal/js"
 
       - name: Build
         run: go build -o ./bin/task -v ./cmd/task

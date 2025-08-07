@@ -107,12 +107,12 @@ func (js *JavaScript) Eval(options *JSEvalOptions) (string, error) {
 	if len(options.Dir) != 0 {
 		dir = options.Dir
 	}
-	js.plugin.Call("eval", fmt.Appendf(nil, "import * as os from 'qjs:os';os.chdir('%s');", dir))
+	_, _, _ = js.plugin.Call("eval", fmt.Appendf(nil, "import * as os from 'qjs:os';os.chdir('%s');", dir))
 
 	js.plugin.Config["eval.dialect"] = options.Dialect
 
 	if options.Stdin != nil {
-		options.Stdin.Read(js.stdin.Bytes())
+		_, _ = options.Stdin.Read(js.stdin.Bytes())
 	}
 
 	exit, _, err := js.plugin.Call("eval", []byte(options.Script))
@@ -123,10 +123,10 @@ func (js *JavaScript) Eval(options *JSEvalOptions) (string, error) {
 		return "", fmt.Errorf("js: unknown error, exit with code %d", exit)
 	}
 	if options.Stdout != nil {
-		options.Stdout.Write(js.stdout.Bytes())
+		_, _ = options.Stdout.Write(js.stdout.Bytes())
 	}
 	if options.Stderr != nil {
-		options.Stderr.Write(js.stderr.Bytes())
+		_, _ = options.Stderr.Write(js.stderr.Bytes())
 	}
 	return js.stdout.String(), nil
 }
