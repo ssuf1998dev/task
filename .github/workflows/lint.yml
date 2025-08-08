@@ -24,8 +24,7 @@ jobs:
 
       - name: prepare
         run: |
-          mkdir -p internal/js/civet/Civet/dist
-          touch internal/js/civet/Civet/dist/quickjs.min.mjs
+          touch internal/js/qjs.wasm
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8

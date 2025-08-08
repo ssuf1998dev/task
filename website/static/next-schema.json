@@ -28,7 +28,7 @@
         }
       ]
     },
-    "interpreter": {
+    "interp": {
       "type": "string",
       "enum": ["sh", "js", "javascript", "civet"]
     },
@@ -312,9 +312,9 @@
           "type": "string",
           "description": "The value will be treated as a command and the output assigned to the variable"
         },
-        "interpreter": {
+        "interp": {
           "description": "Customise interpreter that executes commands.",
-          "$ref": "#/definitions/interpreter"
+          "$ref": "#/definitions/interp"
         },
         "ref": {
           "type": "string",
@@ -379,9 +379,9 @@
           "description": "Specifies which platforms the command should be run on.",
           "$ref": "#/definitions/platforms"
         },
-        "interpreter": {
+        "interp": {
           "description": "Customise interpreter that executes commands.",
-          "$ref": "#/definitions/interpreter"
+          "$ref": "#/definitions/interp"
         }
       },
       "additionalProperties": false,

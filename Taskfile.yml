@@ -54,8 +54,8 @@ tasks:
     desc: Runs tests and generates golden fixture files
     aliases: [gen:fixtures, g:fixtures]
     env:
-      GOLDIE_UPDATE: 'true'
-      GOLDIE_TEMPLATE: 'true'
+      GOLDIE_UPDATE: "true"
+      GOLDIE_TEMPLATE: "true"
     cmds:
       - find ./testdata -name '*.golden' -delete
       - go test ./...
@@ -228,18 +228,9 @@ tasks:
     cmds:
       - npm publish --access=public
 
-  js:civet:
-    desc: Build civet for interpreting.
-    dir: internal/js/civet
-    cmd: |
-      git submodule init
-      git submodule update
-      cd Civet
-      git apply ../build.patch
-      yarn install
-      yarn build
-      yarn terser dist/quickjs.mjs --compress --mangle --ecma 2015 --output dist/quickjs.min.mjs
+  qjs:
+    desc: Download latest qjs.wasm
+    dir: internal/js
+    cmd: wget -nv -O qjs.wasm https://github.com/ssuf1998dev/task-quickjs-ng/releases/latest/download/qjs.wasm
     preconditions:
-      - command -v node
-      - command -v yarn
-      - command -v git
+      - command -v wget

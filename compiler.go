@@ -170,8 +170,8 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, 
 	}
 
 	intp := "sh"
-	if experiments.Interpreter.Enabled() {
-		intp = v.Interpreter
+	if experiments.Interp.Enabled() {
+		intp = v.Interp
 	}
 
 	var stdout bytes.Buffer
@@ -182,7 +182,7 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, 
 			parts := strings.Split(v, "=")
 			env[parts[0]] = parts[1]
 		}
-		opts := &js.JSOptions{
+		opts := &js.JSEvalOptions{
 			Script:  *v.Sh,
 			Dialect: intp,
 			Dir:     dir,
@@ -190,7 +190,7 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, 
 			Stdout:  &stdout,
 			Stderr:  c.Logger.Stderr,
 		}
-		if err := c.js.Interpret(opts); err != nil {
+		if _, err := c.js.Eval(opts); err != nil {
 			return "", fmt.Errorf(`task: Script "%s" failed: %s`, opts.Script, err)
 		}
 	default:

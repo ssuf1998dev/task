@@ -1,24 +1,30 @@
 package js
 
 import (
+	"bytes"
+	"context"
+	"crypto/rand"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
-	"regexp"
 
-	"modernc.org/libc"
-	"modernc.org/libquickjs"
-
-	"github.com/go-task/task/v3/errors"
+	extism "github.com/extism/go-sdk"
+	"github.com/tetratelabs/wazero"
 )
 
-//go:embed civet/Civet/dist/quickjs.min.mjs
-var civetJs string
+//go:embed qjs.wasm
+var qjswasm []byte
 
-var ErrNilOptions = errors.New("js: nil options given")
+type JavaScript struct {
+	plugin *extism.Plugin
+	stdin  *bytes.Buffer
+	stdout *bytes.Buffer
+	stderr *bytes.Buffer
+}
 
-type JSOptions struct {
+type JSEvalOptions struct {
 	Script  string
 	Dialect string
 	Dir     string
@@ -28,94 +34,114 @@ type JSOptions struct {
 	Stderr  io.Writer
 }
 
-type JavaScript struct {
-	qjs *QuickJS
-}
+var (
+	ctx            context.Context
+	cache          wazero.CompilationCache
+	compiledPlugin *extism.CompiledPlugin
+)
 
-func (j *JavaScript) escape(s string) string {
-	return string(regexp.MustCompile("'").ReplaceAll([]byte(s), []byte("\\'")))
-}
+func init() {
+	ctx = context.Background()
 
-func (j *JavaScript) chdirScript(dir string) string {
-	if len(dir) <= 0 {
-		return ""
+	cache = wazero.NewCompilationCache()
+
+	mft := extism.Manifest{
+		Wasm:   []extism.Wasm{extism.WasmData{Data: qjswasm}},
+		Config: map[string]string{},
 	}
-	return fmt.Sprintf("(await import('os')).chdir('%s');", j.escape(dir))
+	config := extism.PluginConfig{
+		EnableWasi:    true,
+		RuntimeConfig: wazero.NewRuntimeConfig().WithCompilationCache(cache),
+	}
+	compiledPlugin, _ = extism.NewCompiledPlugin(ctx, mft, config, []extism.HostFunction{})
 }
 
 func NewJavaScript() (*JavaScript, error) {
-	qjs, err := NewQuickJS()
+	if compiledPlugin == nil {
+		return nil, fmt.Errorf("js: init failed")
+	}
+	var stdin bytes.Buffer
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	plugin, err := compiledPlugin.Instance(ctx, extism.PluginInstanceConfig{
+		ModuleConfig: wazero.NewModuleConfig().
+			WithRandSource(rand.Reader).
+			WithFSConfig(wazero.NewFSConfig().WithDirMount("/", "/")).
+			WithSysNanosleep().
+			WithSysNanotime().
+			WithSysWalltime().
+			WithStdin(&stdin).
+			WithStdout(&stdout).
+			WithStderr(&stderr),
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	mod := qjs.LoadModule(fmt.Sprintf("export{compile};\n%s", civetJs), "civet")
-	if tag(mod) == libquickjs.EJS_TAG_EXCEPTION {
-		err = qjs.ExceptionToError()
+	_, _, err = plugin.Call("warmup", nil)
+	if err != nil {
+		plugin.Close(ctx)
 		return nil, err
 	}
-	defer libquickjs.XFreeValue(qjs.tls, qjs.ctx, mod)
 
-	return &JavaScript{qjs: qjs}, nil
+	return &JavaScript{
+		plugin: plugin,
+		stdin:  &stdin,
+		stdout: &stdout,
+		stderr: &stderr,
+	}, nil
 }
 
-func (j *JavaScript) Interpret(opts *JSOptions) error {
-	if opts == nil {
-		return ErrNilOptions
+func (js *JavaScript) Close() {
+	js.stdout.Reset()
+	js.stderr.Reset()
+	js.plugin.Close(ctx)
+}
+
+func (js *JavaScript) Eval(options *JSEvalOptions) (string, error) {
+	if options == nil {
+		return "", fmt.Errorf("js: nil options given")
 	}
 
-	if dir, err := os.Getwd(); err == nil {
-		defer (func() {
-			_ = os.Chdir(dir)
-		})()
+	if js.stdin != nil {
+		js.stdin.Reset()
+	}
+	if js.stdout != nil {
+		js.stdout.Reset()
+	}
+	if js.stderr != nil {
+		js.stderr.Reset()
 	}
 
-	j.qjs.ProcessEnv(opts.Env)
-
-	script := opts.Script
-
-	switch opts.Dialect {
-	case "civet":
-		code := j.escape(script)
-
-		js := j.qjs.Eval(fmt.Sprintf(
-			"(async()=>(await import('civet')).compile(`%s`,{js:true}))()",
-			code,
-		), QJSEvalAwait(true))
-		defer libquickjs.XFreeValue(j.qjs.tls, j.qjs.ctx, js)
-		if tag(js) == libquickjs.EJS_TAG_EXCEPTION {
-			err := j.qjs.ExceptionToError()
-			_, _ = opts.Stderr.Write([]byte(err.Error() + "\n"))
-			return err
+	if options.Env != nil {
+		if envJson, err := json.Marshal(options.Env); err == nil {
+			_, _, _ = js.plugin.Call("setEnv", []byte(envJson))
 		}
-
-		jsPtr := libquickjs.XToCString(j.qjs.tls, j.qjs.ctx, js)
-		defer libquickjs.XJS_FreeCString(j.qjs.tls, j.qjs.ctx, jsPtr)
-		script = libc.GoString(jsPtr)
-	default:
 	}
 
-	result := j.qjs.Eval(
-		fmt.Sprintf("(async()=>{%s%s})()", j.chdirScript(opts.Dir), script),
-		QJSEvalAwait(true),
-	)
-	json := libquickjs.XJS_JSONStringify(j.qjs.tls, j.qjs.ctx, result, JS_UNDEFINED, JS_UNDEFINED)
-	defer libquickjs.XFreeValue(j.qjs.tls, j.qjs.ctx, json)
-	if tag(json) == libquickjs.EJS_TAG_EXCEPTION {
-		err := j.qjs.ExceptionToError()
-		_, _ = opts.Stderr.Write([]byte(err.Error() + "\n"))
-		return err
+	dir, _ := os.Getwd()
+	if len(options.Dir) != 0 {
+		dir = options.Dir
+	}
+	js.plugin.Config["eval.dir"] = dir
+
+	js.plugin.Config["eval.dialect"] = options.Dialect
+
+	if options.Stdin != nil {
+		_, _ = options.Stdin.Read(js.stdin.Bytes())
 	}
 
-	jsonPtr := libquickjs.XToCString(j.qjs.tls, j.qjs.ctx, json)
-	defer libquickjs.XJS_FreeCString(j.qjs.tls, j.qjs.ctx, jsonPtr)
-	_, _ = opts.Stdout.Write([]byte(libc.GoString(jsonPtr) + "\n"))
-
-	return nil
-}
-
-func (j *JavaScript) Close() {
-	if j.qjs != nil {
-		j.qjs.Close()
+	exit, _, err := js.plugin.Call("eval", []byte(options.Script))
+	if err != nil {
+		return "", err
 	}
+	if exit > 0 {
+		return "", fmt.Errorf("js: unknown error, exit with code %d", exit)
+	}
+	if options.Stdout != nil {
+		_, _ = options.Stdout.Write(js.stdout.Bytes())
+	}
+	if options.Stderr != nil {
+		_, _ = options.Stderr.Write(js.stderr.Bytes())
+	}
+	return js.stdout.String(), nil
 }
