@@ -24,9 +24,8 @@ tasks:
           print(A);
         interp: "javascript"
 
-      # - cmd: |
-      #     return process.env.B + process.env.C;
-      #   interp: "js"
+      - cmd: print(process.env.B + process.env.C);
+        interp: "js"
 
   civet:
     cmds:

@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -27,6 +28,7 @@ type JSEvalOptions struct {
 	Script  string
 	Dialect string
 	Dir     string
+	Env     map[string]string
 	Stdin   io.Reader
 	Stdout  io.Writer
 	Stderr  io.Writer
@@ -100,14 +102,27 @@ func (js *JavaScript) Eval(options *JSEvalOptions) (string, error) {
 		return "", fmt.Errorf("js: nil options given")
 	}
 
-	js.stdout.Reset()
-	js.stderr.Reset()
+	if js.stdin != nil {
+		js.stdin.Reset()
+	}
+	if js.stdout != nil {
+		js.stdout.Reset()
+	}
+	if js.stderr != nil {
+		js.stderr.Reset()
+	}
+
+	if options.Env != nil {
+		if envJson, err := json.Marshal(options.Env); err == nil {
+			_, _, _ = js.plugin.Call("setEnv", []byte(envJson))
+		}
+	}
 
 	dir, _ := os.Getwd()
 	if len(options.Dir) != 0 {
 		dir = options.Dir
 	}
-	_, _, _ = js.plugin.Call("eval", fmt.Appendf(nil, "import * as os from 'qjs:os';os.chdir('%s');", dir))
+	js.plugin.Config["eval.dir"] = dir
 
 	js.plugin.Config["eval.dialect"] = options.Dialect
 

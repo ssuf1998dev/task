@@ -1909,7 +1909,9 @@ world
 task: [js] var A = 'a';
 print(A);
 
-a`)
+a
+task: [js] print(process.env.B + process.env.C);
+bc`)
 	assert.Contains(t, buff.String(), output)
 
 	buff.Reset()

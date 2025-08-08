@@ -356,10 +356,10 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 				Script:  cmd.Cmd,
 				Dialect: intp,
 				Dir:     t.Dir,
-				// 	Env:     env.GetMap(t),
-				Stdin:  e.Stdin,
-				Stdout: stdOut,
-				Stderr: stdErr,
+				Env:     env.GetMap(t),
+				Stdin:   e.Stdin,
+				Stdout:  stdOut,
+				Stderr:  stdErr,
 			})
 		default:
 			err = execext.RunCommand(ctx, &execext.RunCommandOptions{

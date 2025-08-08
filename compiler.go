@@ -177,18 +177,18 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, 
 	var stdout bytes.Buffer
 	switch intp {
 	case "javascript", "js", "civet":
-		// env := map[string]string{}
-		// for _, v := range e {
-		// 	parts := strings.Split(v, "=")
-		// 	env[parts[0]] = parts[1]
-		// }
+		env := map[string]string{}
+		for _, v := range e {
+			parts := strings.Split(v, "=")
+			env[parts[0]] = parts[1]
+		}
 		opts := &js.JSEvalOptions{
 			Script:  *v.Sh,
 			Dialect: intp,
 			Dir:     dir,
-			// Env:     env,
-			Stdout: &stdout,
-			Stderr: c.Logger.Stderr,
+			Env:     env,
+			Stdout:  &stdout,
+			Stderr:  c.Logger.Stderr,
 		}
 		if _, err := c.js.Eval(opts); err != nil {
 			return "", fmt.Errorf(`task: Script "%s" failed: %s`, opts.Script, err)

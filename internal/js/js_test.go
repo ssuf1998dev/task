@@ -47,7 +47,7 @@ func TestCwd(t *testing.T) {
 		Script: `
 		import * as os from "qjs:os";
 		print(os.getcwd()[0]);
-		os.chdir("~")
+		os.chdir("~");
 		`,
 	})
 	require.NoError(t, err)
