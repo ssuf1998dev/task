@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 
 	extism "github.com/extism/go-sdk"
 	"github.com/tetratelabs/wazero"
@@ -38,9 +39,10 @@ var (
 	ctx            context.Context
 	cache          wazero.CompilationCache
 	compiledPlugin *extism.CompiledPlugin
+	initOnce       sync.Once
 )
 
-func init() {
+func setup() {
 	ctx = context.Background()
 
 	cache = wazero.NewCompilationCache()
@@ -54,6 +56,10 @@ func init() {
 		RuntimeConfig: wazero.NewRuntimeConfig().WithCompilationCache(cache),
 	}
 	compiledPlugin, _ = extism.NewCompiledPlugin(ctx, mft, config, []extism.HostFunction{})
+}
+
+func Setup() {
+	initOnce.Do(setup)
 }
 
 func NewJavaScript() (*JavaScript, error) {
