@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Refactor JavaSript interpreter using QuickJS wasi lib, [libquickjs](https://gitlab.com/cznic/libquickjs) is removed.
+
 ## v3.44.1-1.0.2 - 2025-07-24
 
 - Plugin load timeout default to 10s, fix error `context deadline exceeded`.
