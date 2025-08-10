@@ -46,7 +46,7 @@ jobs:
           cp website/static/schema-taskrc.json schema-taskrc.json
 
       - name: Build and publish NPM packages
-        uses: ssuf1998dev/goreleaser-npm-publisher-action@v1
+        uses: ssuf1998dev/goreleaser-npm-publisher-action@v1.1.0-1.1.0
         with:
           token: ${{ secrets.NPM_AUTH_TOKEN }}
           tag: latest
