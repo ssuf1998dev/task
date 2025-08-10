@@ -104,6 +104,7 @@ func NewExecutor(opts ...ExecutorOption) *Executor {
 		executionHashesMutex: sync.Mutex{},
 	}
 	if experiments.Interp.Enabled() {
+		js.Setup()
 		if js, err := js.NewJavaScript(); err == nil {
 			e.js = js
 		}

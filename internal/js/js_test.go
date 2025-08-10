@@ -12,6 +12,7 @@ import (
 func TestBasic(t *testing.T) {
 	t.Parallel()
 
+	Setup()
 	js1, err := NewJavaScript()
 	require.NoError(t, err)
 	defer js1.Close()
@@ -37,6 +38,7 @@ func TestBasic(t *testing.T) {
 func TestCwd(t *testing.T) {
 	t.Parallel()
 
+	Setup()
 	js, err := NewJavaScript()
 	require.NoError(t, err)
 	defer js.Close()
