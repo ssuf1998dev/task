@@ -39,7 +39,7 @@ var (
 	ctx            context.Context
 	cache          wazero.CompilationCache
 	compiledPlugin *extism.CompiledPlugin
-	initOnce       sync.Once
+	once           sync.Once
 )
 
 func setup() {
@@ -59,7 +59,7 @@ func setup() {
 }
 
 func Setup() {
-	initOnce.Do(setup)
+	once.Do(setup)
 }
 
 func NewJavaScript() (*JavaScript, error) {
