@@ -202,3 +202,20 @@ func (err *TaskNotAllowedVarsError) Error() string {
 func (err *TaskNotAllowedVarsError) Code() int {
 	return CodeTaskNotAllowedVars
 }
+
+type TaskSSHConnectError struct {
+	TaskName string
+	Err      error
+}
+
+func (err *TaskSSHConnectError) Error() string {
+	return fmt.Sprintf(
+		`task: Task %q is trying to connect ssh server but failed, %v`,
+		err.TaskName,
+		err.Err,
+	)
+}
+
+func (err *TaskSSHConnectError) Code() int {
+	return CodeTaskSSHConnectError
+}

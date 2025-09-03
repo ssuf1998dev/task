@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v3"
 
 	"github.com/go-task/task/v3/errors"
@@ -41,6 +42,7 @@ type Task struct {
 	Run           string
 	Platforms     []*Platform
 	Ssh           *Ssh
+	SshClient     *ssh.Client
 	Watch         bool
 	Location      *Location
 	// Populated during merging
@@ -221,6 +223,7 @@ func (t *Task) DeepCopy() *Task {
 		IncludedTaskfileVars: t.IncludedTaskfileVars.DeepCopy(),
 		Platforms:            deepcopy.Slice(t.Platforms),
 		Ssh:                  t.Ssh.DeepCopy(),
+		SshClient:            nil,
 		Location:             t.Location.DeepCopy(),
 		Requires:             t.Requires.DeepCopy(),
 		Namespace:            t.Namespace,

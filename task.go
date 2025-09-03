@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	"slices"
 	"sync/atomic"
 
+	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
 	"mvdan.cc/sh/v3/interp"
 
@@ -209,6 +211,45 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 			e.Logger.Errf(logger.Red, "task: cannot make directory %q: %v\n", t.Dir, err)
 		}
 
+		if t.Ssh != nil {
+			auth := []ssh.AuthMethod{}
+			if len(t.Ssh.PrivateKey) > 0 {
+				(func() {
+					key, err := os.ReadFile(t.Ssh.PrivateKey)
+					if err != nil {
+						e.Logger.Errf(logger.Red, "task: cannot read ssh private key %q: %v\n", t.Ssh.PrivateKey, err)
+						return
+					}
+
+					signer, err := ssh.ParsePrivateKey(key)
+					if err != nil {
+						e.Logger.Errf(logger.Red, "task: invalid ssh private key %q: %v\n", t.Ssh.PrivateKey, err)
+						return
+					}
+
+					auth = append(auth, ssh.PublicKeys(signer))
+				})()
+			}
+			if len(t.Ssh.Password) > 0 {
+				auth = append(auth, ssh.Password(t.Ssh.Password))
+			}
+
+			client, err := ssh.Dial("tcp", t.Ssh.Addr, &ssh.ClientConfig{
+				User: t.Ssh.User,
+				Auth: auth,
+			})
+			if err != nil {
+				return &errors.TaskSSHConnectError{TaskName: call.Task, Err: err}
+			}
+			t.SshClient = client
+			defer client.Close()
+
+			if !filepath.IsAbs(t.Dir) {
+				e.Logger.Errf(logger.Red, "task: relative dir is ignored in SSH Task %q\n", t.Name())
+				t.Dir = ""
+			}
+		}
+
 		var deferredExitCode uint8
 
 		for i := range t.Cmds {
@@ -238,6 +279,7 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 				return &errors.TaskRunError{TaskName: t.Task, Err: err}
 			}
 		}
+		t.SshClient = nil
 		e.Logger.VerboseErrf(logger.Magenta, "task: %q finished\n", call.Task)
 		return nil
 	})
@@ -345,33 +387,69 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		}
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
 
-		intp := "sh"
-		if experiments.Interp.Enabled() {
-			intp = cmd.Interp
-		}
+		if t.SshClient != nil {
+			err = (func() error {
+				session, err := t.SshClient.NewSession()
+				if err != nil {
+					return err
+				}
+				defer session.Close()
 
-		switch intp {
-		case "javascript", "js", "civet":
-			_, err = e.js.Eval(&js.JSEvalOptions{
-				Script:  cmd.Cmd,
-				Dialect: intp,
-				Dir:     t.Dir,
-				Env:     env.GetMap(t),
-				Stdin:   e.Stdin,
-				Stdout:  stdOut,
-				Stderr:  stdErr,
-			})
-		default:
-			err = execext.RunCommand(ctx, &execext.RunCommandOptions{
-				Command:   cmd.Cmd,
-				Dir:       t.Dir,
-				Env:       env.Get(t),
-				PosixOpts: slicesext.UniqueJoin(e.Taskfile.Set, t.Set, cmd.Set),
-				BashOpts:  slicesext.UniqueJoin(e.Taskfile.Shopt, t.Shopt, cmd.Shopt),
-				Stdin:     e.Stdin,
-				Stdout:    stdOut,
-				Stderr:    stdErr,
-			})
+				session.Stdout = stdOut
+				session.Stderr = stdErr
+
+				err = session.Shell()
+				if err != nil {
+					return err
+				}
+
+				stdin, err := session.StdinPipe()
+				if err != nil {
+					return err
+				}
+
+				if len(t.Dir) > 0 {
+					fmt.Fprintf(stdin, "cd %s\n", t.Dir)
+				}
+
+				fmt.Fprintf(stdin, "%s\n", cmd.Cmd)
+
+				err = session.Wait()
+				if err != nil {
+					return err
+				}
+
+				return nil
+			})()
+		} else {
+			intp := "sh"
+			if experiments.Interp.Enabled() {
+				intp = cmd.Interp
+			}
+
+			switch intp {
+			case "javascript", "js", "civet":
+				_, err = e.js.Eval(&js.JSEvalOptions{
+					Script:  cmd.Cmd,
+					Dialect: intp,
+					Dir:     t.Dir,
+					Env:     env.GetMap(t),
+					Stdin:   e.Stdin,
+					Stdout:  stdOut,
+					Stderr:  stdErr,
+				})
+			default:
+				err = execext.RunCommand(ctx, &execext.RunCommandOptions{
+					Command:   cmd.Cmd,
+					Dir:       t.Dir,
+					Env:       env.Get(t),
+					PosixOpts: slicesext.UniqueJoin(e.Taskfile.Set, t.Set, cmd.Set),
+					BashOpts:  slicesext.UniqueJoin(e.Taskfile.Shopt, t.Shopt, cmd.Shopt),
+					Stdin:     e.Stdin,
+					Stdout:    stdOut,
+					Stderr:    stdErr,
+				})
+			}
 		}
 
 		if closeErr := closer(err); closeErr != nil {
