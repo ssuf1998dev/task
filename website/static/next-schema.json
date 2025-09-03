@@ -30,11 +30,11 @@
               "type": "string"
             },
             "password": {
-              "description": "Authenticate with this given password.",
+              "description": "Password to authenticate with.",
               "type": "string"
             },
             "privateKey": {
-              "description": "Private key file to authenticate with, prioritizing over the password-way.",
+              "description": "Private key file to authenticate with.",
               "type": "string"
             },
             "insecure": {
