@@ -40,6 +40,7 @@ type Task struct {
 	IgnoreError   bool
 	Run           string
 	Platforms     []*Platform
+	Ssh           *Ssh
 	Watch         bool
 	Location      *Location
 	// Populated during merging
@@ -136,6 +137,7 @@ func (t *Task) UnmarshalYAML(node *yaml.Node) error {
 			IgnoreError   bool `yaml:"ignore_error"`
 			Run           string
 			Platforms     []*Platform
+			Ssh           *Ssh
 			Requires      *Requires
 			Watch         bool
 		}
@@ -174,6 +176,7 @@ func (t *Task) UnmarshalYAML(node *yaml.Node) error {
 		t.IgnoreError = task.IgnoreError
 		t.Run = task.Run
 		t.Platforms = task.Platforms
+		t.Ssh = task.Ssh
 		t.Requires = task.Requires
 		t.Watch = task.Watch
 		return nil
@@ -217,6 +220,7 @@ func (t *Task) DeepCopy() *Task {
 		IncludeVars:          t.IncludeVars.DeepCopy(),
 		IncludedTaskfileVars: t.IncludedTaskfileVars.DeepCopy(),
 		Platforms:            deepcopy.Slice(t.Platforms),
+		Ssh:                  t.Ssh.DeepCopy(),
 		Location:             t.Location.DeepCopy(),
 		Requires:             t.Requires.DeepCopy(),
 		Namespace:            t.Namespace,

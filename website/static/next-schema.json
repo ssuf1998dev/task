@@ -12,6 +12,39 @@
         "type": "string"
       }
     },
+    "ssh": {
+      "anyOf": [
+        {
+          "description": "The URL to connect SSH server.",
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "addr": {
+              "description": "The address to connect SSH server.",
+              "type": "string"
+            },
+            "user": {
+              "description": "Username to authenticate as.",
+              "type": "string"
+            },
+            "password": {
+              "description": "Authenticate with this given password.",
+              "type": "string"
+            },
+            "privateKey": {
+              "description": "Private key file to authenticate with, prioritizing over the password-way.",
+              "type": "string"
+            },
+            "insecure": {
+              "description": "Will accept any host key.",
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    },
     "plugin": {
       "anyOf": [
         {
