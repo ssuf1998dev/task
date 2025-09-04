@@ -415,15 +415,25 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 			}
 			switch intp {
 			case "javascript", "js", "civet":
-				_, err = e.js.Eval(&js.JSEvalOptions{
-					Script:  cmd.Cmd,
-					Dialect: intp,
-					Dir:     t.Dir,
-					Env:     env.GetMap(t),
-					Stdin:   e.Stdin,
-					Stdout:  stdOut,
-					Stderr:  stdErr,
-				})
+				if e.js == nil {
+					js.Setup()
+					if js, err := js.NewJavaScript(); err == nil {
+						e.js = js
+					}
+				}
+				if e.js != nil {
+					_, err = e.js.Eval(&js.JSEvalOptions{
+						Script:  cmd.Cmd,
+						Dialect: intp,
+						Dir:     t.Dir,
+						Env:     env.GetMap(t),
+						Stdin:   e.Stdin,
+						Stdout:  stdOut,
+						Stderr:  stdErr,
+					})
+				} else {
+					err = fmt.Errorf("js: uninitialized")
+				}
 			default:
 				err = execext.RunCommand(ctx, &execext.RunCommandOptions{
 					Command:   cmd.Cmd,
