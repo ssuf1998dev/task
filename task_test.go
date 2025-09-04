@@ -1983,6 +1983,7 @@ func TestSsh(t *testing.T) {
 	}{
 		{task: "whoami", output: "root\n"},
 		{task: "whoami-cmd", output: "root\n"},
+		{task: "for", output: "alice\nbob\ncharlie\n"},
 		{task: "ls", output: ".\n..\n"},
 		{task: "env", output: "BAR\n"},
 	}

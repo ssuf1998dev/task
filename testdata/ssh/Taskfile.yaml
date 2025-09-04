@@ -15,6 +15,14 @@ tasks:
     requires:
       vars: [HOST]
 
+  for:
+    cmds:
+      - for: [alice, bob, charlie]
+        cmd: echo "{{.ITEM}}"
+        ssh: //root:foobar@{{.HOST}}?insecure
+    requires:
+      vars: [HOST]
+
   ls:
     ssh:
       addr: "{{.HOST}}"

@@ -490,6 +490,10 @@
         "platforms": {
           "description": "Specifies which platforms the command should be run on.",
           "$ref": "#/definitions/platforms"
+        },
+        "ssh": {
+          "description": "Run the command on a remote server.",
+          "$ref": "#/definitions/ssh"
         }
       },
       "oneOf": [

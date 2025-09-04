@@ -179,6 +179,12 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 					newCmd.Cmd = templater.ReplaceWithExtra(cmd.Cmd, cache, extra)
 					newCmd.Task = templater.ReplaceWithExtra(cmd.Task, cache, extra)
 					newCmd.Vars = templater.ReplaceVarsWithExtra(cmd.Vars, cache, extra)
+					if err := compiledSsh(newCmd.Ssh, cache, &extra); err != nil {
+						return nil, errors.TaskfileInvalidError{
+							URI: origTask.Location.Taskfile,
+							Err: err,
+						}
+					}
 					new.Cmds = append(new.Cmds, newCmd)
 				}
 				continue
@@ -193,7 +199,7 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 			newCmd.Cmd = templater.Replace(cmd.Cmd, cache)
 			newCmd.Task = templater.Replace(cmd.Task, cache)
 			newCmd.Vars = templater.ReplaceVars(cmd.Vars, cache)
-			if err := compiledSsh(newCmd.Ssh, cache); err != nil {
+			if err := compiledSsh(newCmd.Ssh, cache, nil); err != nil {
 				return nil, errors.TaskfileInvalidError{
 					URI: origTask.Location.Taskfile,
 					Err: err,
@@ -255,7 +261,7 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 		}
 	}
 
-	if err := compiledSsh(origTask.Ssh, cache); err != nil {
+	if err := compiledSsh(origTask.Ssh, cache, nil); err != nil {
 		return nil, errors.TaskfileInvalidError{
 			URI: origTask.Location.Taskfile,
 			Err: err,
@@ -274,12 +280,18 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 	return &new, nil
 }
 
-func compiledSsh(ssh *ast.Ssh, cache *templater.Cache) error {
+func compiledSsh(ssh *ast.Ssh, cache *templater.Cache, extra *map[string]any) error {
 	if ssh == nil {
 		return nil
 	}
 	if len(ssh.Raw) > 0 {
-		parsed, err := url.Parse(templater.Replace(ssh.Raw, cache))
+		var compiled string
+		if extra == nil {
+			compiled = templater.Replace(ssh.Raw, cache)
+		} else {
+			compiled = templater.ReplaceWithExtra(ssh.Raw, cache, *extra)
+		}
+		parsed, err := url.Parse(compiled)
 		if err != nil {
 			return err
 		}
