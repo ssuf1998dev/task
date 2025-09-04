@@ -3,22 +3,25 @@ version: "3"
 
 tasks:
   whoami:
-    dir: /root
     ssh: //root:foobar@{{.HOST}}?insecure
     cmd: whoami
+    requires:
+      vars: [HOST]
 
   ls:
-    dir: /root
     ssh:
       addr: "{{.HOST}}"
       user: root
       password: foobar
       insecure: true
     cmd: ls -a
+    requires:
+      vars: [HOST]
 
   env:
     env:
       FOO: BAR
-    dir: /root
     ssh: //root:foobar@{{.HOST}}?insecure
     cmd: echo $FOO
+    requires:
+      vars: [HOST]

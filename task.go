@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"runtime"
 	"slices"
 	"sync/atomic"
@@ -255,11 +254,6 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 			}
 			t.SshClient = client
 			defer client.Close()
-
-			if !filepath.IsAbs(t.Dir) {
-				e.Logger.Errf(logger.Red, "task: relative dir is ignored in SSH Task %q\n", t.Name())
-				t.Dir = ""
-			}
 		}
 
 		var deferredExitCode uint8
@@ -402,7 +396,6 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		if t.SshClient != nil {
 			err = runSsh(t.SshClient, &runSshOptions{
 				Command: cmd.Cmd,
-				Dir:     t.Dir,
 				Env:     env.GetMap(t),
 				Stdin:   e.Stdin,
 				Stdout:  stdOut,
@@ -464,7 +457,6 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 
 type runSshOptions struct {
 	Command string
-	Dir     string
 	Env     map[string]string
 	Stdin   io.Reader
 	Stdout  io.Writer
@@ -498,10 +490,7 @@ func runSsh(client *ssh.Client, options *runSshOptions) error {
 		return err
 	}
 
-	cmds := []string{options.Command, "exit"}
-	if len(options.Dir) > 0 {
-		cmds = slices.Insert(cmds, 0, fmt.Sprintf("(cd %s || true) > /dev/null 2>&1", options.Dir))
-	}
+	cmds := []string{options.Command, "exit", "\x00"}
 	for _, cmd := range cmds {
 		fmt.Fprintf(writer, "%s\n", cmd)
 	}
