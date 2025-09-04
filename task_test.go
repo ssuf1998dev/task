@@ -1954,7 +1954,7 @@ task: [var-civet] echo 6
 	assert.Contains(t, buff.String(), output)
 }
 
-func TestSSH(t *testing.T) {
+func TestSsh(t *testing.T) {
 	// TODO setup ssh server when CICD
 	host := "127.0.0.1:10022"
 	_, err := net.DialTimeout("tcp", host, time.Second)
