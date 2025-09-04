@@ -3,14 +3,11 @@ package task
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"runtime"
 	"slices"
 	"sync/atomic"
 
-	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/knownhosts"
 	"golang.org/x/sync/errgroup"
 	"mvdan.cc/sh/v3/interp"
 
@@ -24,6 +21,7 @@ import (
 	"github.com/go-task/task/v3/internal/output"
 	"github.com/go-task/task/v3/internal/slicesext"
 	"github.com/go-task/task/v3/internal/sort"
+	taskSsh "github.com/go-task/task/v3/internal/ssh"
 	"github.com/go-task/task/v3/internal/summary"
 	"github.com/go-task/task/v3/internal/templater"
 	"github.com/go-task/task/v3/taskfile/ast"
@@ -213,47 +211,18 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 		}
 
 		if t.Ssh != nil {
-			auth := []ssh.AuthMethod{}
-			if len(t.Ssh.PrivateKey) > 0 {
-				(func() {
-					key, err := os.ReadFile(t.Ssh.PrivateKey)
-					if err != nil {
-						e.Logger.Errf(logger.Red, "task: cannot read ssh private key %q: %v\n", t.Ssh.PrivateKey, err)
-						return
-					}
-
-					signer, err := ssh.ParsePrivateKey(key)
-					if err != nil {
-						e.Logger.Errf(logger.Red, "task: invalid ssh private key %q: %v\n", t.Ssh.PrivateKey, err)
-						return
-					}
-
-					auth = append(auth, ssh.PublicKeys(signer))
-				})()
-			}
-			if len(t.Ssh.Password) > 0 {
-				auth = append(auth, ssh.Password(t.Ssh.Password))
-			}
-
-			client, err := ssh.Dial("tcp", t.Ssh.Addr, &ssh.ClientConfig{
-				User: t.Ssh.User,
-				Auth: auth,
-				HostKeyCallback: (func() ssh.HostKeyCallback {
-					if t.Ssh.Insecure || e.Insecure {
-						return ssh.InsecureIgnoreHostKey()
-					}
-					if callback, err := knownhosts.New(t.Ssh.KnownHosts...); err == nil {
-						return callback
-					} else {
-						return nil
-					}
-				})(),
+			t.SshClient, err = taskSsh.NewSshClient(&taskSsh.NewOptions{
+				Addr:       t.Ssh.Addr,
+				User:       t.Ssh.User,
+				Password:   t.Ssh.Password,
+				PrivateKey: t.Ssh.PrivateKey,
+				KnownHosts: t.Ssh.KnownHosts,
+				Insecure:   t.Ssh.Insecure || e.Insecure,
 			})
 			if err != nil {
 				return &errors.TaskSSHConnectError{TaskName: call.Task, Err: err}
 			}
-			t.SshClient = client
-			defer client.Close()
+			defer t.SshClient.Close()
 		}
 
 		var deferredExitCode uint8
@@ -394,9 +363,9 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
 
 		if t.SshClient != nil {
-			err = runSsh(t.SshClient, &runSshOptions{
+			err = t.SshClient.Run(&taskSsh.RunOptions{
 				Command: cmd.Cmd,
-				Env:     env.GetMap(t),
+				Env:     env.GetMap(t, false),
 				Stdin:   e.Stdin,
 				Stdout:  stdOut,
 				Stderr:  stdErr,
@@ -419,7 +388,7 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 						Script:  cmd.Cmd,
 						Dialect: intp,
 						Dir:     t.Dir,
-						Env:     env.GetMap(t),
+						Env:     env.GetMap(t, true),
 						Stdin:   e.Stdin,
 						Stdout:  stdOut,
 						Stderr:  stdErr,
@@ -453,49 +422,6 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 	default:
 		return nil
 	}
-}
-
-type runSshOptions struct {
-	Command string
-	Env     map[string]string
-	Stdin   io.Reader
-	Stdout  io.Writer
-	Stderr  io.Writer
-}
-
-func runSsh(client *ssh.Client, options *runSshOptions) error {
-	session, err := client.NewSession()
-	if err != nil {
-		return err
-	}
-	defer session.Close()
-
-	for name, value := range options.Env {
-		if err := session.Setenv(name, value); err != nil {
-			return err
-		}
-	}
-
-	session.Stdout = options.Stdout
-	session.Stderr = options.Stderr
-
-	writer, err := session.StdinPipe()
-	if err != nil {
-		return err
-	}
-	defer writer.Close()
-
-	err = session.Shell()
-	if err != nil {
-		return err
-	}
-
-	cmds := []string{options.Command, "exit", "\x00"}
-	for _, cmd := range cmds {
-		fmt.Fprintf(writer, "%s\n", cmd)
-	}
-
-	return session.Wait()
 }
 
 func (e *Executor) startExecution(ctx context.Context, t *ast.Task, execute func(ctx context.Context) error) error {

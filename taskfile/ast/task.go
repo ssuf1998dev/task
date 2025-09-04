@@ -5,11 +5,11 @@ import (
 	"regexp"
 	"strings"
 
-	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v3"
 
 	"github.com/go-task/task/v3/errors"
 	"github.com/go-task/task/v3/internal/deepcopy"
+	taskSsh "github.com/go-task/task/v3/internal/ssh"
 )
 
 // Task represents a task
@@ -42,7 +42,7 @@ type Task struct {
 	Run           string
 	Platforms     []*Platform
 	Ssh           *Ssh
-	SshClient     *ssh.Client
+	SshClient     *taskSsh.SshClient
 	Watch         bool
 	Location      *Location
 	// Populated during merging

@@ -31,12 +31,12 @@ func Get(t *ast.Task) []string {
 	return GetFromVars(t.Env)
 }
 
-func GetMap(t *ast.Task) map[string]string {
+func GetMap(t *ast.Task, includeOS bool) map[string]string {
 	if t.Env == nil {
 		return nil
 	}
 
-	return GetMapFromVars(t.Env)
+	return GetMapFromVars(t.Env, includeOS)
 }
 
 func GetFromVars(env *ast.Vars) []string {
@@ -57,7 +57,7 @@ func GetFromVars(env *ast.Vars) []string {
 	return environ
 }
 
-func GetMapFromVars(env *ast.Vars) map[string]string {
+func GetMapFromVars(env *ast.Vars, includeOS bool) map[string]string {
 	m := map[string]string{}
 
 	for k, v := range env.ToCacheMap() {
@@ -72,9 +72,11 @@ func GetMapFromVars(env *ast.Vars) map[string]string {
 		m[k] = v.(string)
 	}
 
-	for _, e := range os.Environ() {
-		parts := strings.Split(e, "=")
-		m[parts[0]] = parts[1]
+	if includeOS {
+		for _, e := range os.Environ() {
+			parts := strings.SplitN(e, "=", 2)
+			m[parts[0]] = parts[1]
+		}
 	}
 
 	return m
