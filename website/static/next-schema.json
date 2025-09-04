@@ -37,6 +37,13 @@
               "description": "Private key file to authenticate with.",
               "type": "string"
             },
+            "knownHosts": {
+              "description": "`known_hosts` files to check host key.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
             "insecure": {
               "description": "Will accept any host key.",
               "type": "boolean"
