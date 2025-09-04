@@ -254,7 +254,7 @@
           "$ref": "#/definitions/platforms"
         },
         "ssh": {
-          "description": "Run commands on a remote server.",
+          "description": "Run the task on a remote server.",
           "$ref": "#/definitions/ssh"
         },
         "requires": {
@@ -422,6 +422,10 @@
         "platforms": {
           "description": "Specifies which platforms the command should be run on.",
           "$ref": "#/definitions/platforms"
+        },
+        "ssh": {
+          "description": "Run the command on a remote server.",
+          "$ref": "#/definitions/ssh"
         },
         "interp": {
           "description": "Customise interpreter that executes commands.",

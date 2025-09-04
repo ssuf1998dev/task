@@ -193,6 +193,12 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 			newCmd.Cmd = templater.Replace(cmd.Cmd, cache)
 			newCmd.Task = templater.Replace(cmd.Task, cache)
 			newCmd.Vars = templater.ReplaceVars(cmd.Vars, cache)
+			if err := compiledSsh(newCmd.Ssh, cache); err != nil {
+				return nil, errors.TaskfileInvalidError{
+					URI: origTask.Location.Taskfile,
+					Err: err,
+				}
+			}
 			new.Cmds = append(new.Cmds, newCmd)
 		}
 	}
@@ -249,30 +255,10 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 		}
 	}
 
-	if origTask.Ssh != nil {
-		if len(origTask.Ssh.Raw) > 0 {
-			parsed, err := url.Parse(templater.Replace(origTask.Ssh.Raw, cache))
-			if err != nil {
-				return nil, errors.TaskfileInvalidError{
-					URI: origTask.Location.Taskfile,
-					Err: err,
-				}
-			}
-			origTask.Ssh.Addr = parsed.Host
-			origTask.Ssh.User = parsed.User.Username()
-			origTask.Ssh.Password, _ = parsed.User.Password()
-			origTask.Ssh.PrivateKey = parsed.Query().Get("privateKey")
-			origTask.Ssh.KnownHosts = parsed.Query()["knownHosts"]
-			origTask.Ssh.Insecure = parsed.Query().Has("insecure")
-		} else {
-			valueOf := reflect.ValueOf(origTask.Ssh)
-			for i := 0; i < valueOf.Elem().NumField(); i++ {
-				field := valueOf.Elem().Type().Field(i)
-				value := valueOf.Elem().Field(i)
-				if value.CanSet() && field.Name != "Raw" && field.Type.Name() == "string" {
-					value.SetString(templater.Replace(value.String(), cache))
-				}
-			}
+	if err := compiledSsh(origTask.Ssh, cache); err != nil {
+		return nil, errors.TaskfileInvalidError{
+			URI: origTask.Location.Taskfile,
+			Err: err,
 		}
 	}
 
@@ -286,6 +272,34 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 	}
 
 	return &new, nil
+}
+
+func compiledSsh(ssh *ast.Ssh, cache *templater.Cache) error {
+	if ssh == nil {
+		return nil
+	}
+	if len(ssh.Raw) > 0 {
+		parsed, err := url.Parse(templater.Replace(ssh.Raw, cache))
+		if err != nil {
+			return err
+		}
+		ssh.Addr = parsed.Host
+		ssh.User = parsed.User.Username()
+		ssh.Password, _ = parsed.User.Password()
+		ssh.PrivateKey = parsed.Query().Get("privateKey")
+		ssh.KnownHosts = parsed.Query()["knownHosts"]
+		ssh.Insecure = parsed.Query().Has("insecure")
+	} else {
+		valueOf := reflect.ValueOf(ssh)
+		for i := 0; i < valueOf.Elem().NumField(); i++ {
+			field := valueOf.Elem().Type().Field(i)
+			value := valueOf.Elem().Field(i)
+			if value.CanSet() && field.Name != "Raw" && field.Type.Name() == "string" {
+				value.SetString(templater.Replace(value.String(), cache))
+			}
+		}
+	}
+	return nil
 }
 
 func asAnySlice[T any](slice []T) []any {

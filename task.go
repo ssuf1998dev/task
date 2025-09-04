@@ -362,8 +362,26 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		}
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
 
-		if t.SshClient != nil {
-			err = t.SshClient.Run(&taskSsh.RunOptions{
+		var sshClient *taskSsh.SshClient
+		if cmd.Ssh != nil {
+			sshClient, err = taskSsh.NewSshClient(&taskSsh.NewOptions{
+				Addr:       cmd.Ssh.Addr,
+				User:       cmd.Ssh.User,
+				Password:   cmd.Ssh.Password,
+				PrivateKey: cmd.Ssh.PrivateKey,
+				KnownHosts: cmd.Ssh.KnownHosts,
+				Insecure:   cmd.Ssh.Insecure || e.Insecure,
+			})
+			if err != nil {
+				return &errors.TaskSSHConnectError{TaskName: call.Task, Err: err}
+			}
+		} else {
+			sshClient = t.SshClient
+		}
+
+		if sshClient != nil {
+			defer sshClient.Close()
+			err = sshClient.Run(&taskSsh.RunOptions{
 				Command: cmd.Cmd,
 				Env:     env.GetMap(t, false),
 				Stdin:   e.Stdin,

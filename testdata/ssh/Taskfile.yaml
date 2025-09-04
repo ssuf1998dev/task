@@ -8,6 +8,13 @@ tasks:
     requires:
       vars: [HOST]
 
+  whoami-cmd:
+    cmd:
+      cmd: whoami
+      ssh: //root:foobar@{{.HOST}}?insecure
+    requires:
+      vars: [HOST]
+
   ls:
     ssh:
       addr: "{{.HOST}}"

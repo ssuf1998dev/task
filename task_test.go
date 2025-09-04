@@ -1977,20 +1977,22 @@ func TestSsh(t *testing.T) {
 	vars := ast.NewVars()
 	vars.Set("HOST", ast.Var{Value: host})
 
-	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "whoami", Vars: vars}))
-	assert.Equal(t, "root\n", stdout.String())
-	stdout.Reset()
-	stderr.Reset()
+	calls := []struct {
+		task   string
+		output string
+	}{
+		{task: "whoami", output: "root\n"},
+		{task: "whoami-cmd", output: "root\n"},
+		{task: "ls", output: ".\n..\n"},
+		{task: "env", output: "BAR\n"},
+	}
 
-	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "ls", Vars: vars}))
-	assert.Equal(t, ".\n..\n", stdout.String())
-	stdout.Reset()
-	stderr.Reset()
-
-	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "env", Vars: vars}))
-	assert.Equal(t, "BAR\n", stdout.String())
-	stdout.Reset()
-	stderr.Reset()
+	for _, call := range calls {
+		require.NoError(t, e.Run(context.Background(), &task.Call{Task: call.task, Vars: vars}))
+		assert.Equal(t, call.output, stdout.String())
+		stdout.Reset()
+		stderr.Reset()
+	}
 }
 
 func TestExitCodeZero(t *testing.T) {
