@@ -44,6 +44,7 @@ func (s *Ssh) UnmarshalYAML(node *yaml.Node) error {
 		s.Addr = parsed.Host
 		s.User = parsed.User.Username()
 		s.Password, _ = parsed.User.Password()
+		s.Insecure = parsed.Query().Has("insecure")
 		return nil
 	case yaml.MappingNode:
 		var ssh struct {

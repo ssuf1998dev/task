@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=../../website/static/next-schema.json
+version: "3"
+
+tasks:
+  ssh:
+    dir: /root
+    ssh: //root:foobar@127.0.0.1:10022?insecure
+    cmd: whoami

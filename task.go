@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -10,6 +11,7 @@ import (
 	"sync/atomic"
 
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 	"golang.org/x/sync/errgroup"
 	"mvdan.cc/sh/v3/interp"
 
@@ -237,6 +239,16 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 			client, err := ssh.Dial("tcp", t.Ssh.Addr, &ssh.ClientConfig{
 				User: t.Ssh.User,
 				Auth: auth,
+				HostKeyCallback: (func() ssh.HostKeyCallback {
+					if t.Ssh.Insecure {
+						return ssh.InsecureIgnoreHostKey()
+					}
+					if callback, err := knownhosts.New(); err == nil {
+						return callback
+					} else {
+						return nil
+					}
+				})(),
 			})
 			if err != nil {
 				return &errors.TaskSSHConnectError{TaskName: call.Task, Err: err}
@@ -388,39 +400,12 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
 
 		if t.SshClient != nil {
-			err = (func() error {
-				session, err := t.SshClient.NewSession()
-				if err != nil {
-					return err
-				}
-				defer session.Close()
-
-				session.Stdout = stdOut
-				session.Stderr = stdErr
-
-				err = session.Shell()
-				if err != nil {
-					return err
-				}
-
-				stdin, err := session.StdinPipe()
-				if err != nil {
-					return err
-				}
-
-				if len(t.Dir) > 0 {
-					fmt.Fprintf(stdin, "cd %s\n", t.Dir)
-				}
-
-				fmt.Fprintf(stdin, "%s\n", cmd.Cmd)
-
-				err = session.Wait()
-				if err != nil {
-					return err
-				}
-
-				return nil
-			})()
+			err = e.runSsh(t, &runSshOptions{
+				Command: cmd.Cmd,
+				Stdin:   e.Stdin,
+				Stdout:  stdOut,
+				Stderr:  stdErr,
+			})
 		} else {
 			intp := "sh"
 			if experiments.Interp.Enabled() {
@@ -464,6 +449,46 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 	default:
 		return nil
 	}
+}
+
+type runSshOptions struct {
+	Command string
+	Stdin   io.Reader
+	Stdout  io.Writer
+	Stderr  io.Writer
+}
+
+func (e *Executor) runSsh(t *ast.Task, options *runSshOptions) error {
+	session, err := t.SshClient.NewSession()
+	if err != nil {
+		return err
+	}
+	defer session.Close()
+
+	session.Stdout = options.Stdout
+	session.Stderr = options.Stderr
+
+	writer, err := session.StdinPipe()
+	if err != nil {
+		return err
+	}
+	defer writer.Close()
+
+	err = session.Shell()
+	if err != nil {
+		return err
+	}
+
+	cmds := []string{options.Command, "exit"}
+	if len(t.Dir) > 0 {
+		cmds = slices.Insert(cmds, 0, fmt.Sprintf("(cd %s || true) > /dev/null 2>&1", t.Dir))
+	}
+	for _, cmd := range cmds {
+		fmt.Fprintf(writer, "%s\n", cmd)
+	}
+	session.Wait()
+
+	return nil
 }
 
 func (e *Executor) startExecution(ctx context.Context, t *ast.Task, execute func(ctx context.Context) error) error {

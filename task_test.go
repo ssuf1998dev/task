@@ -1953,6 +1953,27 @@ task: [var-civet] echo 6
 	assert.Contains(t, buff.String(), output)
 }
 
+func TestSSH(t *testing.T) {
+	t.Parallel()
+
+	const dir = "testdata/ssh"
+	var buff bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir(dir),
+		task.WithStdout(&buff),
+		task.WithStderr(&buff),
+	)
+	require.NoError(t, e.Setup())
+	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "ssh"}))
+
+	output := strings.TrimSpace(`
+task: [ssh] whoami
+root`)
+	assert.Contains(t, buff.String(), output)
+
+	buff.Reset()
+}
+
 func TestExitCodeZero(t *testing.T) {
 	t.Parallel()
 
