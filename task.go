@@ -479,7 +479,9 @@ func runSsh(client *ssh.Client, options *runSshOptions) error {
 	defer session.Close()
 
 	for name, value := range options.Env {
-		session.Setenv(name, value)
+		if err := session.Setenv(name, value); err != nil {
+			return err
+		}
 	}
 
 	session.Stdout = options.Stdout
@@ -503,9 +505,8 @@ func runSsh(client *ssh.Client, options *runSshOptions) error {
 	for _, cmd := range cmds {
 		fmt.Fprintf(writer, "%s\n", cmd)
 	}
-	session.Wait()
 
-	return nil
+	return session.Wait()
 }
 
 func (e *Executor) startExecution(ctx context.Context, t *ast.Task, execute func(ctx context.Context) error) error {
