@@ -3,8 +3,10 @@ package task
 import (
 	"fmt"
 	"maps"
+	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/joho/godotenv"
@@ -244,6 +246,33 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 			newPrecondition.Sh = templater.Replace(precondition.Sh, cache)
 			newPrecondition.Msg = templater.Replace(precondition.Msg, cache)
 			new.Preconditions = append(new.Preconditions, newPrecondition)
+		}
+	}
+
+	if origTask.Ssh != nil {
+		if len(origTask.Ssh.Raw) > 0 {
+			parsed, err := url.Parse(templater.Replace(origTask.Ssh.Raw, cache))
+			if err != nil {
+				return nil, errors.TaskfileInvalidError{
+					URI: origTask.Location.Taskfile,
+					Err: err,
+				}
+			}
+			origTask.Ssh.Addr = parsed.Host
+			origTask.Ssh.User = parsed.User.Username()
+			origTask.Ssh.Password, _ = parsed.User.Password()
+			origTask.Ssh.PrivateKey = parsed.Query().Get("privateKey")
+			origTask.Ssh.KnownHosts = parsed.Query()["knownHosts"]
+			origTask.Ssh.Insecure = parsed.Query().Has("insecure")
+		} else {
+			valueOf := reflect.ValueOf(origTask.Ssh)
+			for i := 0; i < valueOf.Elem().NumField(); i++ {
+				field := valueOf.Elem().Type().Field(i)
+				value := valueOf.Elem().Field(i)
+				if value.CanSet() && field.Name != "Raw" && field.Type.Name() == "string" {
+					value.SetString(templater.Replace(value.String(), cache))
+				}
+			}
 		}
 	}
 

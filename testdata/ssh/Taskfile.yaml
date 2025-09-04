@@ -2,7 +2,23 @@
 version: "3"
 
 tasks:
-  ssh:
+  whoami:
     dir: /root
-    ssh: //root:foobar@127.0.0.1:10022?insecure
+    ssh: //root:foobar@{{.HOST}}?insecure
     cmd: whoami
+
+  ls:
+    dir: /root
+    ssh:
+      addr: "{{.HOST}}"
+      user: root
+      password: foobar
+      insecure: true
+    cmd: ls -a
+
+  env:
+    env:
+      FOO: BAR
+    dir: /root
+    ssh: //root:foobar@{{.HOST}}?insecure
+    cmd: echo $FOO

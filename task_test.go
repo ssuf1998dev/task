@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"maps"
 	rand "math/rand/v2"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -1954,24 +1955,41 @@ task: [var-civet] echo 6
 }
 
 func TestSSH(t *testing.T) {
+	host := "127.0.0.1:10022"
+	_, err := net.DialTimeout("tcp", host, time.Second)
+	if err != nil {
+		t.Skipf("host %q is unreachable, skip", host)
+		return
+	}
+
 	t.Parallel()
 
 	const dir = "testdata/ssh"
-	var buff bytes.Buffer
+	var stdout, stderr bytes.Buffer
 	e := task.NewExecutor(
 		task.WithDir(dir),
-		task.WithStdout(&buff),
-		task.WithStderr(&buff),
+		task.WithStdout(&stdout),
+		task.WithStderr(&stderr),
 	)
 	require.NoError(t, e.Setup())
-	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "ssh"}))
 
-	output := strings.TrimSpace(`
-task: [ssh] whoami
-root`)
-	assert.Contains(t, buff.String(), output)
+	vars := ast.NewVars()
+	vars.Set("HOST", ast.Var{Value: host})
 
-	buff.Reset()
+	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "whoami", Vars: vars}))
+	assert.Equal(t, "root\n", stdout.String())
+	stdout.Reset()
+	stderr.Reset()
+
+	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "ls", Vars: vars}))
+	assert.Equal(t, ".\n..\n", stdout.String())
+	stdout.Reset()
+	stderr.Reset()
+
+	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "env", Vars: vars}))
+	assert.Equal(t, "BAR\n", stdout.String())
+	stdout.Reset()
+	stderr.Reset()
 }
 
 func TestExitCodeZero(t *testing.T) {

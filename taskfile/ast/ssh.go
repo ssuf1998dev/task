@@ -1,11 +1,10 @@
 package ast
 
 import (
-	"net/url"
-
 	"gopkg.in/yaml.v3"
 
 	"github.com/go-task/task/v3/errors"
+	"github.com/go-task/task/v3/internal/deepcopy"
 )
 
 type Ssh struct {
@@ -13,7 +12,9 @@ type Ssh struct {
 	User       string
 	Password   string
 	PrivateKey string
+	KnownHosts []string
 	Insecure   bool
+	Raw        string
 }
 
 func (s *Ssh) DeepCopy() *Ssh {
@@ -25,7 +26,9 @@ func (s *Ssh) DeepCopy() *Ssh {
 		User:       s.User,
 		Password:   s.Password,
 		PrivateKey: s.PrivateKey,
+		KnownHosts: deepcopy.Slice(s.KnownHosts),
 		Insecure:   s.Insecure,
+		Raw:        s.Raw,
 	}
 }
 
@@ -37,14 +40,7 @@ func (s *Ssh) UnmarshalYAML(node *yaml.Node) error {
 		if err != nil {
 			return errors.NewTaskfileDecodeError(err, node)
 		}
-		parsed, err := url.Parse(ssh)
-		if err != nil {
-			return errors.NewTaskfileDecodeError(err, node)
-		}
-		s.Addr = parsed.Host
-		s.User = parsed.User.Username()
-		s.Password, _ = parsed.User.Password()
-		s.Insecure = parsed.Query().Has("insecure")
+		s.Raw = ssh
 		return nil
 	case yaml.MappingNode:
 		var ssh struct {
@@ -52,12 +48,15 @@ func (s *Ssh) UnmarshalYAML(node *yaml.Node) error {
 			User       string
 			Password   string
 			PrivateKey string
+			KnownHosts []string
 			Insecure   bool
+			Raw        string
 		}
 		if err := node.Decode(&ssh); err != nil {
 			return errors.NewTaskfileDecodeError(err, node)
 		}
 		*s = ssh
+		s.Raw = ""
 		return nil
 	}
 	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("ssh")

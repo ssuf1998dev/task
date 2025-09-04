@@ -243,7 +243,7 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 					if t.Ssh.Insecure {
 						return ssh.InsecureIgnoreHostKey()
 					}
-					if callback, err := knownhosts.New(); err == nil {
+					if callback, err := knownhosts.New(t.Ssh.KnownHosts...); err == nil {
 						return callback
 					} else {
 						return nil
@@ -400,8 +400,10 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
 
 		if t.SshClient != nil {
-			err = e.runSsh(t, &runSshOptions{
+			err = runSsh(t.SshClient, &runSshOptions{
 				Command: cmd.Cmd,
+				Dir:     t.Dir,
+				Env:     env.GetMap(t),
 				Stdin:   e.Stdin,
 				Stdout:  stdOut,
 				Stderr:  stdErr,
@@ -411,7 +413,6 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 			if experiments.Interp.Enabled() {
 				intp = cmd.Interp
 			}
-
 			switch intp {
 			case "javascript", "js", "civet":
 				_, err = e.js.Eval(&js.JSEvalOptions{
@@ -453,17 +454,23 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 
 type runSshOptions struct {
 	Command string
+	Dir     string
+	Env     map[string]string
 	Stdin   io.Reader
 	Stdout  io.Writer
 	Stderr  io.Writer
 }
 
-func (e *Executor) runSsh(t *ast.Task, options *runSshOptions) error {
-	session, err := t.SshClient.NewSession()
+func runSsh(client *ssh.Client, options *runSshOptions) error {
+	session, err := client.NewSession()
 	if err != nil {
 		return err
 	}
 	defer session.Close()
+
+	for name, value := range options.Env {
+		session.Setenv(name, value)
+	}
 
 	session.Stdout = options.Stdout
 	session.Stderr = options.Stderr
@@ -480,8 +487,8 @@ func (e *Executor) runSsh(t *ast.Task, options *runSshOptions) error {
 	}
 
 	cmds := []string{options.Command, "exit"}
-	if len(t.Dir) > 0 {
-		cmds = slices.Insert(cmds, 0, fmt.Sprintf("(cd %s || true) > /dev/null 2>&1", t.Dir))
+	if len(options.Dir) > 0 {
+		cmds = slices.Insert(cmds, 0, fmt.Sprintf("(cd %s || true) > /dev/null 2>&1", options.Dir))
 	}
 	for _, cmd := range cmds {
 		fmt.Fprintf(writer, "%s\n", cmd)
