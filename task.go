@@ -239,7 +239,7 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 				User: t.Ssh.User,
 				Auth: auth,
 				HostKeyCallback: (func() ssh.HostKeyCallback {
-					if t.Ssh.Insecure {
+					if t.Ssh.Insecure || e.Insecure {
 						return ssh.InsecureIgnoreHostKey()
 					}
 					if callback, err := knownhosts.New(t.Ssh.KnownHosts...); err == nil {
