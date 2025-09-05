@@ -179,7 +179,7 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 					newCmd.Cmd = templater.ReplaceWithExtra(cmd.Cmd, cache, extra)
 					newCmd.Task = templater.ReplaceWithExtra(cmd.Task, cache, extra)
 					newCmd.Vars = templater.ReplaceVarsWithExtra(cmd.Vars, cache, extra)
-					if err := compiledSsh(newCmd.Ssh, cache, &extra); err != nil {
+					if err := compiledSsh(newCmd.Ssh, cache, extra); err != nil {
 						return nil, errors.TaskfileInvalidError{
 							URI: origTask.Location.Taskfile,
 							Err: err,
@@ -280,7 +280,7 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 	return &new, nil
 }
 
-func compiledSsh(ssh *ast.Ssh, cache *templater.Cache, extra *map[string]any) error {
+func compiledSsh(ssh *ast.Ssh, cache *templater.Cache, extra map[string]any) error {
 	if ssh == nil {
 		return nil
 	}
@@ -289,7 +289,7 @@ func compiledSsh(ssh *ast.Ssh, cache *templater.Cache, extra *map[string]any) er
 		if extra == nil {
 			compiled = templater.Replace(ssh.Raw, cache)
 		} else {
-			compiled = templater.ReplaceWithExtra(ssh.Raw, cache, *extra)
+			compiled = templater.ReplaceWithExtra(ssh.Raw, cache, extra)
 		}
 		parsed, err := url.Parse(compiled)
 		if err != nil {
