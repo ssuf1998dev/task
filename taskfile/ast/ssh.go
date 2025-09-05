@@ -11,8 +11,10 @@ type Ssh struct {
 	Addr       string
 	User       string
 	Password   string
-	PrivateKey string
+	Key        string
+	KeyPath    string
 	KnownHosts []string
+	Timeout    int
 	Insecure   bool
 	Raw        string
 }
@@ -25,8 +27,10 @@ func (s *Ssh) DeepCopy() *Ssh {
 		Addr:       s.Addr,
 		User:       s.User,
 		Password:   s.Password,
-		PrivateKey: s.PrivateKey,
+		Key:        s.Key,
+		KeyPath:    s.KeyPath,
 		KnownHosts: deepcopy.Slice(s.KnownHosts),
+		Timeout:    s.Timeout,
 		Insecure:   s.Insecure,
 		Raw:        s.Raw,
 	}
@@ -47,8 +51,10 @@ func (s *Ssh) UnmarshalYAML(node *yaml.Node) error {
 			Addr       string
 			User       string
 			Password   string
-			PrivateKey string
+			Key        string
+			KeyPath    string
 			KnownHosts []string
+			Timeout    int
 			Insecure   bool
 			Raw        string
 		}

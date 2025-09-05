@@ -215,8 +215,10 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 				Addr:       t.Ssh.Addr,
 				User:       t.Ssh.User,
 				Password:   t.Ssh.Password,
-				PrivateKey: t.Ssh.PrivateKey,
+				Key:        t.Ssh.Key,
+				KeyPath:    t.Ssh.KeyPath,
 				KnownHosts: t.Ssh.KnownHosts,
+				Timeout:    t.Ssh.Timeout,
 				Insecure:   t.Ssh.Insecure || e.Insecure,
 			})
 			if err != nil {
@@ -368,8 +370,10 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 				Addr:       cmd.Ssh.Addr,
 				User:       cmd.Ssh.User,
 				Password:   cmd.Ssh.Password,
-				PrivateKey: cmd.Ssh.PrivateKey,
+				Key:        cmd.Ssh.Key,
+				KeyPath:    cmd.Ssh.KeyPath,
 				KnownHosts: cmd.Ssh.KnownHosts,
+				Timeout:    cmd.Ssh.Timeout,
 				Insecure:   cmd.Ssh.Insecure || e.Insecure,
 			})
 			if err != nil {

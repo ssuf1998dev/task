@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
@@ -179,7 +180,7 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 					newCmd.Cmd = templater.ReplaceWithExtra(cmd.Cmd, cache, extra)
 					newCmd.Task = templater.ReplaceWithExtra(cmd.Task, cache, extra)
 					newCmd.Vars = templater.ReplaceVarsWithExtra(cmd.Vars, cache, extra)
-					if err := compiledSsh(newCmd.Ssh, cache, extra); err != nil {
+					if err := compileSsh(newCmd.Ssh, cache, extra); err != nil {
 						return nil, errors.TaskfileInvalidError{
 							URI: origTask.Location.Taskfile,
 							Err: err,
@@ -199,7 +200,7 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 			newCmd.Cmd = templater.Replace(cmd.Cmd, cache)
 			newCmd.Task = templater.Replace(cmd.Task, cache)
 			newCmd.Vars = templater.ReplaceVars(cmd.Vars, cache)
-			if err := compiledSsh(newCmd.Ssh, cache, nil); err != nil {
+			if err := compileSsh(newCmd.Ssh, cache, nil); err != nil {
 				return nil, errors.TaskfileInvalidError{
 					URI: origTask.Location.Taskfile,
 					Err: err,
@@ -261,7 +262,7 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 		}
 	}
 
-	if err := compiledSsh(origTask.Ssh, cache, nil); err != nil {
+	if err := compileSsh(origTask.Ssh, cache, nil); err != nil {
 		return nil, errors.TaskfileInvalidError{
 			URI: origTask.Location.Taskfile,
 			Err: err,
@@ -280,7 +281,7 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 	return &new, nil
 }
 
-func compiledSsh(ssh *ast.Ssh, cache *templater.Cache, extra map[string]any) error {
+func compileSsh(ssh *ast.Ssh, cache *templater.Cache, extra map[string]any) error {
 	if ssh == nil {
 		return nil
 	}
@@ -298,8 +299,14 @@ func compiledSsh(ssh *ast.Ssh, cache *templater.Cache, extra map[string]any) err
 		ssh.Addr = parsed.Host
 		ssh.User = parsed.User.Username()
 		ssh.Password, _ = parsed.User.Password()
-		ssh.PrivateKey = parsed.Query().Get("privateKey")
+		ssh.Key = parsed.Query().Get("key")
+		ssh.KeyPath = parsed.Query().Get("keyPath")
 		ssh.KnownHosts = parsed.Query()["knownHosts"]
+		if parsed.Query().Has("timeout") {
+			if ssh.Timeout, err = strconv.Atoi(parsed.Query().Get("timeout")); err != nil {
+				return err
+			}
+		}
 		ssh.Insecure = parsed.Query().Has("insecure")
 	} else {
 		valueOf := reflect.ValueOf(ssh)

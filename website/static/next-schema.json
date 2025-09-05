@@ -33,7 +33,11 @@
               "description": "Password to authenticate with.",
               "type": "string"
             },
-            "privateKey": {
+            "key": {
+              "description": "Private key content to authenticate with.",
+              "type": "string"
+            },
+            "keyPath": {
               "description": "Private key file to authenticate with.",
               "type": "string"
             },
@@ -44,9 +48,15 @@
                 "type": "string"
               }
             },
+            "timeout": {
+              "description": "Timeout for SSH connection to host. Defaults to 0s for no timeout",
+              "type": "integer",
+              "default": 0
+            },
             "insecure": {
               "description": "Will accept any host key.",
-              "type": "boolean"
+              "type": "boolean",
+              "default": false
             }
           }
         }

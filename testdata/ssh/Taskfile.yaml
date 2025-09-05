@@ -3,7 +3,7 @@ version: "3"
 
 tasks:
   whoami:
-    ssh: //root:foobar@{{.HOST}}?insecure
+    ssh: //root:foobar@{{.HOST}}?insecure&timeout=3
     cmd: whoami
     requires:
       vars: [HOST]

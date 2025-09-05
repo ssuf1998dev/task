@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
@@ -17,15 +18,24 @@ type NewOptions struct {
 	Addr       string
 	User       string
 	Password   string
-	PrivateKey string
+	Key        string
+	KeyPath    string
 	KnownHosts []string
+	Timeout    int
 	Insecure   bool
 }
 
 func NewSshClient(options *NewOptions) (*SshClient, error) {
 	auth := []ssh.AuthMethod{}
-	if len(options.PrivateKey) > 0 {
-		key, err := os.ReadFile(options.PrivateKey)
+	if len(options.Key) > 0 {
+		signer, err := ssh.ParsePrivateKey([]byte(options.Key))
+		if err != nil {
+			return nil, err
+		}
+
+		auth = append(auth, ssh.PublicKeys(signer))
+	} else if len(options.KeyPath) > 0 {
+		key, err := os.ReadFile(options.KeyPath)
 		if err != nil {
 			return nil, err
 		}
@@ -42,8 +52,9 @@ func NewSshClient(options *NewOptions) (*SshClient, error) {
 	}
 
 	client, err := ssh.Dial("tcp", options.Addr, &ssh.ClientConfig{
-		User: options.User,
-		Auth: auth,
+		User:    options.User,
+		Auth:    auth,
+		Timeout: time.Duration(options.Timeout) * time.Second,
 		HostKeyCallback: (func() ssh.HostKeyCallback {
 			if options.Insecure {
 				return ssh.InsecureIgnoreHostKey()
