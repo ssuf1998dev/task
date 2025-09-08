@@ -24,6 +24,7 @@ const (
 	CodeTaskfileCacheNotFound
 	CodeTaskfileVersionCheckError
 	CodeTaskfileNetworkTimeout
+	CodeTaskfilePluginTimeout
 	CodeTaskfileInvalid
 	CodeTaskfileCycle
 	CodeTaskfileDoesNotMatchChecksum

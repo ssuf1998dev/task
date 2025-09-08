@@ -18,10 +18,21 @@ import (
 	"github.com/go-task/template"
 )
 
-var (
-	templateFuncs           template.FuncMap
-	templatePluginFuncsSync sync.Map
-)
+var templateFuncs template.FuncMap
+
+type pluginFuncs struct {
+	m sync.Map
+	template.FuncMap
+}
+
+var templatePluginFuncs pluginFuncs
+
+func (f *pluginFuncs) setup() {
+	f.m.Range(func(key, value any) bool {
+		f.FuncMap[key.(string)] = value
+		return true
+	})
+}
 
 func init() {
 	taskFuncs := template.FuncMap{
@@ -58,6 +69,8 @@ func init() {
 
 	templateFuncs = template.FuncMap(sprig.TxtFuncMap())
 	maps.Copy(templateFuncs, taskFuncs)
+
+	templatePluginFuncs = pluginFuncs{m: sync.Map{}, FuncMap: template.FuncMap{}}
 }
 
 func os() string {

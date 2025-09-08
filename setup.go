@@ -19,6 +19,7 @@ import (
 	"github.com/go-task/task/v3/internal/filepathext"
 	"github.com/go-task/task/v3/internal/logger"
 	"github.com/go-task/task/v3/internal/output"
+	"github.com/go-task/task/v3/internal/templater"
 	"github.com/go-task/task/v3/internal/version"
 	"github.com/go-task/task/v3/taskfile"
 	"github.com/go-task/task/v3/taskfile/ast"
@@ -85,7 +86,12 @@ func (e *Executor) readTaskfile(node taskfile.Node) error {
 	graph, err := reader.Read(ctx, node)
 	if experiments.Plugins.Enabled() {
 		if err := reader.LoadPlugin(ctx, node); err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				return &errors.TaskfilePluginTimeoutError{Timeout: e.Timeout}
+			}
 			return err
+		} else {
+			templater.SetupPluginFuncs()
 		}
 	}
 	if err != nil {

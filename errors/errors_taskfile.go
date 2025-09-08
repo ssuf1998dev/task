@@ -170,6 +170,21 @@ func (err *TaskfileNetworkTimeoutError) Code() int {
 	return CodeTaskfileNetworkTimeout
 }
 
+type TaskfilePluginTimeoutError struct {
+	Timeout time.Duration
+}
+
+func (err *TaskfilePluginTimeoutError) Error() string {
+	return fmt.Sprintf(
+		`task: Timed out after %s while attempting to load plugins`,
+		err.Timeout,
+	)
+}
+
+func (err *TaskfilePluginTimeoutError) Code() int {
+	return CodeTaskfilePluginTimeout
+}
+
 // TaskfileCycleError is returned when we detect that a Taskfile includes a
 // set of Taskfiles that include each other in a cycle.
 type TaskfileCycleError struct {

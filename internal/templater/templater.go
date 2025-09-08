@@ -42,16 +42,13 @@ func ResolveRef(ref string, cache *Cache) any {
 		cache.cacheMap = cache.Vars.ToCacheMap()
 	}
 
-	templatePluginFuncs := template.FuncMap{}
-	templatePluginFuncsSync.Range(func(key, value any) bool {
-		templatePluginFuncs[key.(string)] = value
-		return true
-	})
-
 	if ref == "." {
 		return cache.cacheMap
 	}
-	t, err := template.New("resolver").Funcs(templateFuncs).Funcs(templatePluginFuncs).Parse(fmt.Sprintf("{{%s}}", ref))
+	t, err := template.New("resolver").
+		Funcs(templateFuncs).
+		Funcs(templatePluginFuncs.FuncMap).
+		Parse(fmt.Sprintf("{{%s}}", ref))
 	if err != nil {
 		cache.err = err
 		return nil
@@ -86,15 +83,12 @@ func ReplaceWithExtra[T any](v T, cache *Cache, extra map[string]any) T {
 		maps.Copy(data, extra)
 	}
 
-	templatePluginFuncs := template.FuncMap{}
-	templatePluginFuncsSync.Range(func(key, value any) bool {
-		templatePluginFuncs[key.(string)] = value
-		return true
-	})
-
 	// Traverse the value and parse any template variables
 	copy, err := deepcopy.TraverseStringsFunc(v, func(v string) (string, error) {
-		tpl, err := template.New("").Funcs(templateFuncs).Funcs(templatePluginFuncs).Parse(v)
+		tpl, err := template.New("").
+			Funcs(templateFuncs).
+			Funcs(templatePluginFuncs.FuncMap).
+			Parse(v)
 		if err != nil {
 			return v, err
 		}
@@ -163,5 +157,9 @@ func ReplaceVarsWithExtra(vars *ast.Vars, cache *Cache, extra map[string]any) *a
 }
 
 func ExposePluginFunc(name string, fn func(input string) any) {
-	templatePluginFuncsSync.Store(name, fn)
+	templatePluginFuncs.m.Store(name, fn)
+}
+
+func SetupPluginFuncs() {
+	templatePluginFuncs.setup()
 }
