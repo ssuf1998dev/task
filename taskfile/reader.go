@@ -210,11 +210,17 @@ func (r *Reader) LoadPlugin(ctx context.Context, node Node) error {
 	for name, value := range tf.Plugins.All() {
 
 		mft := extism.Manifest{
-			AllowedPaths: value.AllowedPaths,
-			Wasm:         []extism.Wasm{extism.WasmFile{Path: filepath.Join(node.Dir(), value.File), Name: name}},
+			Wasm: []extism.Wasm{extism.WasmFile{Path: filepath.Join(node.Dir(), value.File), Name: name}},
 		}
 
 		moduleConfig := wazero.NewModuleConfig()
+		if value.Mounts != nil {
+			fsConfig := wazero.NewFSConfig()
+			for src, tgt := range value.Mounts {
+				fsConfig.WithDirMount(src, tgt)
+			}
+			moduleConfig = moduleConfig.WithFSConfig(fsConfig)
+		}
 		if value.SysNanosleep {
 			moduleConfig = moduleConfig.WithSysNanosleep()
 		}

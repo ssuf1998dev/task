@@ -17,10 +17,10 @@ import (
 type (
 	Plugin struct {
 		File         string
-		AllowedPaths map[string]string `yaml:"allowedPaths"`
-		SysNanosleep bool              `yaml:"sysNanosleep"`
-		SysNanotime  bool              `yaml:"sysNanotime"`
-		SysWalltime  bool              `yaml:"sysWalltime"`
+		Mounts       map[string]string
+		SysNanosleep bool `yaml:"sysNanosleep"`
+		SysNanotime  bool `yaml:"sysNanotime"`
+		SysWalltime  bool `yaml:"sysWalltime"`
 		Rand         bool
 		Stderr       bool
 		Stdout       bool
@@ -152,10 +152,10 @@ func (plugin *Plugin) UnmarshalYAML(node *yaml.Node) error {
 	case yaml.MappingNode:
 		var v struct {
 			File         string
-			AllowedPaths map[string]string `yaml:"allowedPaths"`
-			SysNanosleep bool              `yaml:"sysNanosleep"`
-			SysNanotime  bool              `yaml:"sysNanotime"`
-			SysWalltime  bool              `yaml:"sysWalltime"`
+			Mounts       map[string]string
+			SysNanosleep bool `yaml:"sysNanosleep"`
+			SysNanotime  bool `yaml:"sysNanotime"`
+			SysWalltime  bool `yaml:"sysWalltime"`
 			Rand         bool
 			Stderr       bool
 			Stdout       bool
@@ -164,7 +164,7 @@ func (plugin *Plugin) UnmarshalYAML(node *yaml.Node) error {
 			return errors.NewTaskfileDecodeError(err, node)
 		}
 		plugin.File = v.File
-		plugin.AllowedPaths = v.AllowedPaths
+		plugin.Mounts = v.Mounts
 		plugin.SysNanosleep = v.SysNanosleep
 		plugin.SysNanotime = v.SysNanotime
 		plugin.SysWalltime = v.SysWalltime
@@ -183,7 +183,7 @@ func (plugin *Plugin) DeepCopy() *Plugin {
 	}
 	return &Plugin{
 		File:         plugin.File,
-		AllowedPaths: deepcopy.Map(plugin.AllowedPaths),
+		Mounts:       deepcopy.Map(plugin.Mounts),
 		SysNanosleep: plugin.SysNanosleep,
 		SysNanotime:  plugin.SysNanotime,
 		SysWalltime:  plugin.SysWalltime,
