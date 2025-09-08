@@ -118,7 +118,7 @@ func init() {
 	pflag.StringVar(&TaskSort, "sort", "", "Changes the order of the tasks when listed. [default|alphanumeric|none].")
 	pflag.BoolVar(&Status, "status", false, "Exits with non-zero exit code if any of the given tasks is not up-to-date.")
 	pflag.BoolVar(&NoStatus, "no-status", false, "Ignore status when listing tasks as JSON")
-	pflag.BoolVar(&Insecure, "insecure", false, "Forces Task to download Taskfiles over insecure connections.")
+	pflag.BoolVar(&Insecure, "insecure", false, "Forces Task to download Taskfiles over insecure connections or SSH without host key check.")
 	pflag.BoolVarP(&Watch, "watch", "w", false, "Enables watch of the given task.")
 	pflag.BoolVarP(&Verbose, "verbose", "v", false, "Enables verbose mode.")
 	pflag.BoolVarP(&Silent, "silent", "s", false, "Disables echoing.")

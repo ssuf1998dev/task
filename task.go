@@ -15,12 +15,14 @@ import (
 	"github.com/go-task/task/v3/experiments"
 	"github.com/go-task/task/v3/internal/env"
 	"github.com/go-task/task/v3/internal/execext"
+	"github.com/go-task/task/v3/internal/filepathext"
 	"github.com/go-task/task/v3/internal/fingerprint"
 	"github.com/go-task/task/v3/internal/js"
 	"github.com/go-task/task/v3/internal/logger"
 	"github.com/go-task/task/v3/internal/output"
 	"github.com/go-task/task/v3/internal/slicesext"
 	"github.com/go-task/task/v3/internal/sort"
+	taskSsh "github.com/go-task/task/v3/internal/ssh"
 	"github.com/go-task/task/v3/internal/summary"
 	"github.com/go-task/task/v3/internal/templater"
 	"github.com/go-task/task/v3/taskfile/ast"
@@ -209,6 +211,23 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 			e.Logger.Errf(logger.Red, "task: cannot make directory %q: %v\n", t.Dir, err)
 		}
 
+		if t.Ssh != nil {
+			t.SshClient, err = taskSsh.NewSshClient(&taskSsh.NewOptions{
+				Addr:       t.Ssh.Addr,
+				User:       t.Ssh.User,
+				Password:   t.Ssh.Password,
+				Key:        t.Ssh.Key,
+				KeyPath:    t.Ssh.KeyPath,
+				KnownHosts: t.Ssh.KnownHosts,
+				Timeout:    t.Ssh.Timeout,
+				Insecure:   t.Ssh.Insecure || e.Insecure,
+			})
+			if err != nil {
+				return &errors.TaskSSHConnectError{TaskName: call.Task, Err: err}
+			}
+			defer t.SshClient.Close()
+		}
+
 		var deferredExitCode uint8
 
 		for i := range t.Cmds {
@@ -345,43 +364,88 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		}
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
 
-		intp := "sh"
-		if experiments.Interp.Enabled() {
-			intp = cmd.Interp
+		sshClient := t.SshClient
+		if cmd.Ssh != nil {
+			sshClient, err = taskSsh.NewSshClient(&taskSsh.NewOptions{
+				Addr:       cmd.Ssh.Addr,
+				User:       cmd.Ssh.User,
+				Password:   cmd.Ssh.Password,
+				Key:        cmd.Ssh.Key,
+				KeyPath:    cmd.Ssh.KeyPath,
+				KnownHosts: cmd.Ssh.KnownHosts,
+				Timeout:    cmd.Ssh.Timeout,
+				Insecure:   cmd.Ssh.Insecure || e.Insecure,
+			})
+			if err != nil {
+				return &errors.TaskSSHConnectError{TaskName: call.Task, Err: err}
+			}
+			defer sshClient.Close()
 		}
 
-		switch intp {
-		case "javascript", "js", "civet":
-			if e.js == nil {
-				js.Setup()
-				if js, err := js.NewJavaScript(); err == nil {
-					e.js = js
+		var sshUploads []ast.SshUpload
+		if t.Ssh != nil {
+			sshUploads = t.Ssh.Uploads
+		}
+		if cmd.Ssh != nil && cmd.Ssh.Uploads != nil {
+			sshUploads = cmd.Ssh.Uploads
+		}
+
+		if sshClient != nil {
+			err = func() error {
+				for _, upload := range sshUploads {
+					err := sshClient.Upload(filepathext.SmartJoin(t.Dir, upload.Source), upload.Target)
+					if err != nil {
+						return err
+					}
+					// TODO hash check
+					upload.Done()
 				}
-			}
-			if e.js != nil {
-				_, err = e.js.Eval(&js.JSEvalOptions{
-					Script:  cmd.Cmd,
-					Dialect: intp,
-					Dir:     t.Dir,
-					Env:     env.GetMap(t),
+				return sshClient.Run(&taskSsh.RunOptions{
+					Command: cmd.Cmd,
+					Env:     env.GetMap(t, false),
 					Stdin:   e.Stdin,
 					Stdout:  stdOut,
 					Stderr:  stdErr,
 				})
-			} else {
-				err = fmt.Errorf("js: uninitialized")
+			}()
+		} else {
+			intp := "sh"
+			if experiments.Interp.Enabled() {
+				intp = cmd.Interp
 			}
-		default:
-			err = execext.RunCommand(ctx, &execext.RunCommandOptions{
-				Command:   cmd.Cmd,
-				Dir:       t.Dir,
-				Env:       env.Get(t),
-				PosixOpts: slicesext.UniqueJoin(e.Taskfile.Set, t.Set, cmd.Set),
-				BashOpts:  slicesext.UniqueJoin(e.Taskfile.Shopt, t.Shopt, cmd.Shopt),
-				Stdin:     e.Stdin,
-				Stdout:    stdOut,
-				Stderr:    stdErr,
-			})
+			switch intp {
+			case "javascript", "js", "civet":
+				if e.js == nil {
+					js.Setup()
+					if js, err := js.NewJavaScript(); err == nil {
+						e.js = js
+					}
+				}
+				if e.js != nil {
+					_, err = e.js.Eval(&js.JSEvalOptions{
+						Script:  cmd.Cmd,
+						Dialect: intp,
+						Dir:     t.Dir,
+						Env:     env.GetMap(t, true),
+						Stdin:   e.Stdin,
+						Stdout:  stdOut,
+						Stderr:  stdErr,
+					})
+				} else {
+					err = fmt.Errorf("js: uninitialized")
+				}
+			default:
+				err = execext.RunCommand(ctx, &execext.RunCommandOptions{
+					Command:   cmd.Cmd,
+					Dir:       t.Dir,
+					Env:       env.Get(t),
+					PosixOpts: slicesext.UniqueJoin(e.Taskfile.Set, t.Set, cmd.Set),
+					BashOpts:  slicesext.UniqueJoin(e.Taskfile.Shopt, t.Shopt, cmd.Shopt),
+					Stdin:     e.Stdin,
+					Stdout:    stdOut,
+					Stderr:    stdErr,
+				})
+			}
 		}
 
 		if closeErr := closer(err); closeErr != nil {

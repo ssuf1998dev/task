@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=../../website/static/next-schema.json
+version: "3"
+
+tasks:
+  whoami:
+    ssh: //root:foobar@{{.HOST}}?insecure&timeout=3
+    cmd: whoami
+
+  whoami-cmd:
+    cmd:
+      cmd: whoami
+      ssh: //root:foobar@{{.HOST}}?insecure
+
+  for:
+    cmds:
+      - for: [alice, bob, charlie]
+        cmd: echo "{{.ITEM}}"
+        ssh: //root:foobar@{{.HOST}}?insecure
+
+  ls:
+    ssh:
+      addr: "{{.HOST}}"
+      user: root
+      password: foobar
+      insecure: true
+    cmd: ls -a
+
+  env:
+    env:
+      FOO: BAR
+    ssh: //root:foobar@{{.HOST}}?insecure
+    cmd: echo $FOO
+
+  upload:
+    ssh:
+      url: //root:foobar@{{.HOST}}?insecure
+      uploads:
+        - ./Taskfile.yaml:/root/Taskfile.yaml
+    cmds:
+      - ls -a /root
+      - defer: rm -rf /root/Taskfile.yaml

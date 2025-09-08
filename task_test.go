@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"maps"
 	rand "math/rand/v2"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -1951,6 +1952,49 @@ task: [var-civet] echo 6
 6`)
 
 	assert.Contains(t, buff.String(), output)
+}
+
+func TestSsh(t *testing.T) {
+	// TODO setup ssh server when CICD
+	host := "127.0.0.1:10022"
+	_, err := net.DialTimeout("tcp", host, time.Second)
+	if err != nil {
+		t.Skipf("host %q is unreachable, skip", host)
+		return
+	}
+
+	t.Parallel()
+
+	const dir = "testdata/ssh"
+	var stdout, stderr bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir(dir),
+		task.WithStdout(&stdout),
+		task.WithStderr(&stderr),
+	)
+	require.NoError(t, e.Setup())
+
+	vars := ast.NewVars()
+	vars.Set("HOST", ast.Var{Value: host})
+
+	calls := []struct {
+		task   string
+		output string
+	}{
+		{task: "whoami", output: "root\n"},
+		{task: "whoami-cmd", output: "root\n"},
+		{task: "for", output: "alice\nbob\ncharlie\n"},
+		{task: "ls", output: ".\n..\n"},
+		{task: "env", output: "BAR\n"},
+		{task: "upload", output: ".\n..\nTaskfile.yaml\n"},
+	}
+
+	for _, call := range calls {
+		require.NoError(t, e.Run(context.Background(), &task.Call{Task: call.task, Vars: vars}))
+		assert.Equal(t, call.output, stdout.String())
+		stdout.Reset()
+		stderr.Reset()
+	}
 }
 
 func TestExitCodeZero(t *testing.T) {

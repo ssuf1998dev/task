@@ -3,8 +3,12 @@ package task
 import (
 	"fmt"
 	"maps"
+	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
+	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
@@ -72,6 +76,7 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 		IncludeVars:          origTask.IncludeVars,
 		IncludedTaskfileVars: origTask.IncludedTaskfileVars,
 		Platforms:            origTask.Platforms,
+		Ssh:                  origTask.Ssh,
 		Location:             origTask.Location,
 		Requires:             origTask.Requires,
 		Watch:                origTask.Watch,
@@ -176,6 +181,12 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 					newCmd.Cmd = templater.ReplaceWithExtra(cmd.Cmd, cache, extra)
 					newCmd.Task = templater.ReplaceWithExtra(cmd.Task, cache, extra)
 					newCmd.Vars = templater.ReplaceVarsWithExtra(cmd.Vars, cache, extra)
+					if err := compileSsh(newCmd.Ssh, cache, extra); err != nil {
+						return nil, errors.TaskfileInvalidError{
+							URI: origTask.Location.Taskfile,
+							Err: err,
+						}
+					}
 					new.Cmds = append(new.Cmds, newCmd)
 				}
 				continue
@@ -190,6 +201,12 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 			newCmd.Cmd = templater.Replace(cmd.Cmd, cache)
 			newCmd.Task = templater.Replace(cmd.Task, cache)
 			newCmd.Vars = templater.ReplaceVars(cmd.Vars, cache)
+			if err := compileSsh(newCmd.Ssh, cache, nil); err != nil {
+				return nil, errors.TaskfileInvalidError{
+					URI: origTask.Location.Taskfile,
+					Err: err,
+				}
+			}
 			new.Cmds = append(new.Cmds, newCmd)
 		}
 	}
@@ -246,6 +263,13 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 		}
 	}
 
+	if err := compileSsh(origTask.Ssh, cache, nil); err != nil {
+		return nil, errors.TaskfileInvalidError{
+			URI: origTask.Location.Taskfile,
+			Err: err,
+		}
+	}
+
 	if len(origTask.Status) > 0 {
 		new.Status = templater.Replace(origTask.Status, cache)
 	}
@@ -256,6 +280,52 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 	}
 
 	return &new, nil
+}
+
+func compileSsh(ssh *ast.Ssh, cache *templater.Cache, extra map[string]any) error {
+	if ssh == nil {
+		return nil
+	}
+	if len(ssh.Url) > 0 && len(ssh.Addr) <= 0 {
+		var compiled string
+		if extra == nil {
+			compiled = templater.Replace(ssh.Url, cache)
+		} else {
+			compiled = templater.ReplaceWithExtra(ssh.Url, cache, extra)
+		}
+		parsed, err := url.Parse(compiled)
+		if err != nil {
+			return err
+		}
+		ssh.Addr = parsed.Host
+		ssh.User = parsed.User.Username()
+		ssh.Password, _ = parsed.User.Password()
+		ssh.Key = parsed.Query().Get("key")
+		ssh.KeyPath = parsed.Query().Get("keyPath")
+		ssh.KnownHosts = parsed.Query()["knownHosts"]
+		if parsed.Query().Has("timeout") {
+			if ssh.Timeout, err = strconv.Atoi(parsed.Query().Get("timeout")); err != nil {
+				return err
+			}
+		}
+		ssh.Insecure = parsed.Query().Has("insecure")
+	} else {
+		valueOf := reflect.ValueOf(ssh)
+		for i := 0; i < valueOf.Elem().NumField(); i++ {
+			field := valueOf.Elem().Type().Field(i)
+			value := valueOf.Elem().Field(i)
+			if value.CanSet() &&
+				!slices.Contains([]string{"Url", "Uploads"}, field.Name) &&
+				field.Type.Name() == "string" {
+				if extra == nil {
+					value.SetString(templater.Replace(value.String(), cache))
+				} else {
+					value.SetString(templater.ReplaceWithExtra(value.String(), cache, extra))
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func asAnySlice[T any](slice []T) []any {
