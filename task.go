@@ -15,6 +15,7 @@ import (
 	"github.com/go-task/task/v3/experiments"
 	"github.com/go-task/task/v3/internal/env"
 	"github.com/go-task/task/v3/internal/execext"
+	"github.com/go-task/task/v3/internal/filepathext"
 	"github.com/go-task/task/v3/internal/fingerprint"
 	"github.com/go-task/task/v3/internal/js"
 	"github.com/go-task/task/v3/internal/logger"
@@ -256,7 +257,6 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 				return &errors.TaskRunError{TaskName: t.Task, Err: err}
 			}
 		}
-		t.SshClient = nil
 		e.Logger.VerboseErrf(logger.Magenta, "task: %q finished\n", call.Task)
 		return nil
 	})
@@ -364,7 +364,7 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		}
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
 
-		var sshClient *taskSsh.SshClient
+		sshClient := t.SshClient
 		if cmd.Ssh != nil {
 			sshClient, err = taskSsh.NewSshClient(&taskSsh.NewOptions{
 				Addr:       cmd.Ssh.Addr,
@@ -379,19 +379,35 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 			if err != nil {
 				return &errors.TaskSSHConnectError{TaskName: call.Task, Err: err}
 			}
-		} else {
-			sshClient = t.SshClient
+			defer sshClient.Close()
+		}
+
+		var sshUploads []ast.SshUpload
+		if t.Ssh != nil {
+			sshUploads = t.Ssh.Uploads
+		}
+		if cmd.Ssh != nil && cmd.Ssh.Uploads != nil {
+			sshUploads = cmd.Ssh.Uploads
 		}
 
 		if sshClient != nil {
-			defer sshClient.Close()
-			err = sshClient.Run(&taskSsh.RunOptions{
-				Command: cmd.Cmd,
-				Env:     env.GetMap(t, false),
-				Stdin:   e.Stdin,
-				Stdout:  stdOut,
-				Stderr:  stdErr,
-			})
+			err = func() error {
+				for _, upload := range sshUploads {
+					err := sshClient.Upload(filepathext.SmartJoin(t.Dir, upload.Source), upload.Target)
+					if err != nil {
+						return err
+					}
+					// TODO hash check
+					upload.Done()
+				}
+				return sshClient.Run(&taskSsh.RunOptions{
+					Command: cmd.Cmd,
+					Env:     env.GetMap(t, false),
+					Stdin:   e.Stdin,
+					Stdout:  stdOut,
+					Stderr:  stdErr,
+				})
+			}()
 		} else {
 			intp := "sh"
 			if experiments.Interp.Enabled() {

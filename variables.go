@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -285,12 +286,12 @@ func compileSsh(ssh *ast.Ssh, cache *templater.Cache, extra map[string]any) erro
 	if ssh == nil {
 		return nil
 	}
-	if len(ssh.Raw) > 0 {
+	if len(ssh.Url) > 0 && len(ssh.Addr) <= 0 {
 		var compiled string
 		if extra == nil {
-			compiled = templater.Replace(ssh.Raw, cache)
+			compiled = templater.Replace(ssh.Url, cache)
 		} else {
-			compiled = templater.ReplaceWithExtra(ssh.Raw, cache, extra)
+			compiled = templater.ReplaceWithExtra(ssh.Url, cache, extra)
 		}
 		parsed, err := url.Parse(compiled)
 		if err != nil {
@@ -313,8 +314,14 @@ func compileSsh(ssh *ast.Ssh, cache *templater.Cache, extra map[string]any) erro
 		for i := 0; i < valueOf.Elem().NumField(); i++ {
 			field := valueOf.Elem().Type().Field(i)
 			value := valueOf.Elem().Field(i)
-			if value.CanSet() && field.Name != "Raw" && field.Type.Name() == "string" {
-				value.SetString(templater.Replace(value.String(), cache))
+			if value.CanSet() &&
+				!slices.Contains([]string{"Url", "Uploads"}, field.Name) &&
+				field.Type.Name() == "string" {
+				if extra == nil {
+					value.SetString(templater.Replace(value.String(), cache))
+				} else {
+					value.SetString(templater.ReplaceWithExtra(value.String(), cache, extra))
+				}
 			}
 		}
 	}

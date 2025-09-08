@@ -5,23 +5,17 @@ tasks:
   whoami:
     ssh: //root:foobar@{{.HOST}}?insecure&timeout=3
     cmd: whoami
-    requires:
-      vars: [HOST]
 
   whoami-cmd:
     cmd:
       cmd: whoami
       ssh: //root:foobar@{{.HOST}}?insecure
-    requires:
-      vars: [HOST]
 
   for:
     cmds:
       - for: [alice, bob, charlie]
         cmd: echo "{{.ITEM}}"
         ssh: //root:foobar@{{.HOST}}?insecure
-    requires:
-      vars: [HOST]
 
   ls:
     ssh:
@@ -30,13 +24,18 @@ tasks:
       password: foobar
       insecure: true
     cmd: ls -a
-    requires:
-      vars: [HOST]
 
   env:
     env:
       FOO: BAR
     ssh: //root:foobar@{{.HOST}}?insecure
     cmd: echo $FOO
-    requires:
-      vars: [HOST]
+
+  upload:
+    ssh:
+      url: //root:foobar@{{.HOST}}?insecure
+      uploads:
+        - ./Taskfile.yaml:/root/Taskfile.yaml
+    cmds:
+      - ls -a /root
+      - defer: rm -rf /root/Taskfile.yaml

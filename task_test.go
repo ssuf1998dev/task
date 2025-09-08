@@ -1986,6 +1986,7 @@ func TestSsh(t *testing.T) {
 		{task: "for", output: "alice\nbob\ncharlie\n"},
 		{task: "ls", output: ".\n..\n"},
 		{task: "env", output: "BAR\n"},
+		{task: "upload", output: ".\n..\nTaskfile.yaml\n"},
 	}
 
 	for _, call := range calls {

@@ -1,17 +1,20 @@
 package ssh
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"time"
 
+	scp "github.com/bramvdbogaerde/go-scp"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
 )
 
 type SshClient struct {
 	client *ssh.Client
+	scp    *scp.Client
 }
 
 type NewOptions struct {
@@ -70,7 +73,12 @@ func NewSshClient(options *NewOptions) (*SshClient, error) {
 		return nil, err
 	}
 
-	return &SshClient{client}, nil
+	scp, err := scp.NewClientBySSH(client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SshClient{client: client, scp: &scp}, nil
 }
 
 type RunOptions struct {
@@ -114,6 +122,26 @@ func (s *SshClient) Run(options *RunOptions) error {
 	}
 
 	return session.Wait()
+}
+
+func (s *SshClient) Upload(source string, target string) error {
+	if s.scp == nil {
+		return fmt.Errorf("scp is nil")
+	}
+
+	f, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	stat, err := f.Stat()
+	if err != nil {
+		return err
+	}
+
+	perm := fmt.Sprintf("%04o", stat.Mode().Perm())
+	return s.scp.CopyFromFile(context.Background(), *f, target, perm)
 }
 
 func (s *SshClient) Close() error {

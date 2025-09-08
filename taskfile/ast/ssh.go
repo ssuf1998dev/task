@@ -1,13 +1,65 @@
 package ast
 
 import (
+	"fmt"
+	"strings"
+
 	"gopkg.in/yaml.v3"
 
 	"github.com/go-task/task/v3/errors"
 	"github.com/go-task/task/v3/internal/deepcopy"
 )
 
+type SshUpload struct {
+	Source string
+	Target string
+	done   bool
+}
+
+func (u *SshUpload) DeepCopy() *SshUpload {
+	if u == nil {
+		return nil
+	}
+	return &SshUpload{Source: u.Source, Target: u.Target}
+}
+
+func (u *SshUpload) UnmarshalYAML(node *yaml.Node) error {
+	switch node.Kind {
+	case yaml.ScalarNode:
+		var item string
+		err := node.Decode(&item)
+		if err != nil {
+			return errors.NewTaskfileDecodeError(err, node)
+		}
+		parts := strings.SplitN(item, ":", 2)
+		if len(parts) < 2 {
+			return errors.NewTaskfileDecodeError(fmt.Errorf("must be <source>:<target>"), node)
+		}
+		u.Source = parts[0]
+		u.Target = parts[1]
+		return nil
+	case yaml.MappingNode:
+		var item struct {
+			Source string
+			Target string
+			done   bool
+		}
+		if err := node.Decode(&item); err != nil {
+			return errors.NewTaskfileDecodeError(err, node)
+		}
+		item.done = false
+		*u = item
+		return nil
+	}
+	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("upload")
+}
+
+func (u *SshUpload) Done() {
+	u.done = true
+}
+
 type Ssh struct {
+	Url        string
 	Addr       string
 	User       string
 	Password   string
@@ -16,7 +68,7 @@ type Ssh struct {
 	KnownHosts []string
 	Timeout    int
 	Insecure   bool
-	Raw        string
+	Uploads    []SshUpload
 }
 
 func (s *Ssh) DeepCopy() *Ssh {
@@ -24,6 +76,7 @@ func (s *Ssh) DeepCopy() *Ssh {
 		return nil
 	}
 	return &Ssh{
+		Url:        s.Url,
 		Addr:       s.Addr,
 		User:       s.User,
 		Password:   s.Password,
@@ -32,22 +85,23 @@ func (s *Ssh) DeepCopy() *Ssh {
 		KnownHosts: deepcopy.Slice(s.KnownHosts),
 		Timeout:    s.Timeout,
 		Insecure:   s.Insecure,
-		Raw:        s.Raw,
+		Uploads:    deepcopy.Slice(s.Uploads),
 	}
 }
 
 func (s *Ssh) UnmarshalYAML(node *yaml.Node) error {
 	switch node.Kind {
 	case yaml.ScalarNode:
-		var ssh string
-		err := node.Decode(&ssh)
+		var url string
+		err := node.Decode(&url)
 		if err != nil {
 			return errors.NewTaskfileDecodeError(err, node)
 		}
-		s.Raw = ssh
+		s.Url = url
 		return nil
 	case yaml.MappingNode:
 		var ssh struct {
+			Url        string
 			Addr       string
 			User       string
 			Password   string
@@ -56,13 +110,12 @@ func (s *Ssh) UnmarshalYAML(node *yaml.Node) error {
 			KnownHosts []string
 			Timeout    int
 			Insecure   bool
-			Raw        string
+			Uploads    []SshUpload
 		}
 		if err := node.Decode(&ssh); err != nil {
 			return errors.NewTaskfileDecodeError(err, node)
 		}
 		*s = ssh
-		s.Raw = ""
 		return nil
 	}
 	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("ssh")
