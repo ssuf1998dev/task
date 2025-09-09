@@ -13,7 +13,7 @@ import (
 	"github.com/go-task/task/v3/internal/env"
 	"github.com/go-task/task/v3/internal/execext"
 	"github.com/go-task/task/v3/internal/filepathext"
-	"github.com/go-task/task/v3/internal/js"
+	taskJs "github.com/go-task/task/v3/internal/js"
 	"github.com/go-task/task/v3/internal/logger"
 	"github.com/go-task/task/v3/internal/templater"
 	"github.com/go-task/task/v3/internal/version"
@@ -32,8 +32,6 @@ type Compiler struct {
 
 	dynamicCache   map[string]string
 	muDynamicCache sync.Mutex
-
-	js *js.JavaScript
 }
 
 func (c *Compiler) GetTaskfileVariables() (*ast.Vars, error) {
@@ -182,7 +180,7 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, 
 			parts := strings.Split(v, "=")
 			env[parts[0]] = parts[1]
 		}
-		opts := &js.JSEvalOptions{
+		opts := &taskJs.JSEvalOptions{
 			Script:  *v.Sh,
 			Dialect: intp,
 			Dir:     dir,
@@ -190,15 +188,12 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, 
 			Stdout:  &stdout,
 			Stderr:  c.Logger.Stderr,
 		}
-		if c.js == nil {
-			js.Setup()
-			if js, err := js.NewJavaScript(); err != nil {
-				return "", fmt.Errorf("js: uninitialized")
-			} else {
-				c.js = js
-			}
+		taskJs.Setup()
+		js, err := taskJs.NewJavaScript()
+		if err != nil {
+			return "", fmt.Errorf("js: uninitialized")
 		}
-		if _, err := c.js.Eval(opts); err != nil {
+		if _, err := js.Eval(opts); err != nil {
 			return "", fmt.Errorf(`task: Script "%s" failed: %s`, opts.Script, err)
 		}
 	default:

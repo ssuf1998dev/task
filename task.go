@@ -17,7 +17,7 @@ import (
 	"github.com/go-task/task/v3/internal/execext"
 	"github.com/go-task/task/v3/internal/filepathext"
 	"github.com/go-task/task/v3/internal/fingerprint"
-	"github.com/go-task/task/v3/internal/js"
+	taskJs "github.com/go-task/task/v3/internal/js"
 	"github.com/go-task/task/v3/internal/logger"
 	"github.com/go-task/task/v3/internal/output"
 	"github.com/go-task/task/v3/internal/slicesext"
@@ -415,14 +415,9 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 			}
 			switch intp {
 			case "javascript", "js", "civet":
-				if e.js == nil {
-					js.Setup()
-					if js, err := js.NewJavaScript(); err == nil {
-						e.js = js
-					}
-				}
-				if e.js != nil {
-					_, err = e.js.Eval(&js.JSEvalOptions{
+				taskJs.Setup()
+				if js, jsErr := taskJs.NewJavaScript(); jsErr == nil {
+					_, err = js.Eval(&taskJs.JSEvalOptions{
 						Script:  cmd.Cmd,
 						Dialect: intp,
 						Dir:     t.Dir,

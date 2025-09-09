@@ -1954,6 +1954,30 @@ task: [var-civet] echo 6
 	assert.Contains(t, buff.String(), output)
 }
 
+func TestJSInShell(t *testing.T) {
+	t.Parallel()
+
+	enableExperimentForTest(t, &experiments.Interp, 1)
+
+	const dir = "testdata/js"
+	var buff bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir(dir),
+		task.WithStdout(&buff),
+		task.WithStderr(&buff),
+	)
+	require.NoError(t, e.Setup())
+
+	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "shell"}))
+
+	output := strings.TrimSpace(`
+task: [shell] qjs ./script.js
+3
+task: [shell] civet ./script.civet
+6`)
+	assert.Contains(t, buff.String(), output)
+}
+
 func TestSsh(t *testing.T) {
 	// TODO setup ssh server when CICD
 	host := "127.0.0.1:10022"

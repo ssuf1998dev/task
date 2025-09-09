@@ -10,7 +10,6 @@ import (
 	"github.com/puzpuzpuz/xsync/v3"
 	"github.com/sajari/fuzzy"
 
-	"github.com/go-task/task/v3/internal/js"
 	"github.com/go-task/task/v3/internal/logger"
 	"github.com/go-task/task/v3/internal/output"
 	"github.com/go-task/task/v3/internal/sort"
@@ -72,8 +71,6 @@ type (
 		executionHashes      map[string]context.Context
 		executionHashesMutex sync.Mutex
 		watchedDirs          *xsync.MapOf[string, bool]
-
-		js *js.JavaScript
 	}
 	TempDir struct {
 		Remote      string

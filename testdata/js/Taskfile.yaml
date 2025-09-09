@@ -50,3 +50,8 @@ tasks:
         interp: "civet"
 
     cmd: echo {{.SUM}}
+
+  shell:
+    cmds:
+      - "qjs ./script.js"
+      - "civet ./script.civet"

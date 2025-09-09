@@ -14,6 +14,9 @@ import (
 	"mvdan.cc/sh/v3/syntax"
 
 	"github.com/go-task/task/v3/errors"
+	"github.com/go-task/task/v3/experiments"
+	"github.com/go-task/task/v3/internal/filepathext"
+	taskJs "github.com/go-task/task/v3/internal/js"
 )
 
 // ErrNilOptions is returned when a nil options is given
@@ -59,7 +62,7 @@ func RunCommand(ctx context.Context, opts *RunCommandOptions) error {
 	r, err := interp.New(
 		interp.Params(params...),
 		interp.Env(expand.ListEnviron(environ...)),
-		interp.ExecHandlers(execHandler),
+		interp.ExecHandlers(execJs, execHandler),
 		interp.OpenHandler(openHandler),
 		interp.StdIO(opts.Stdin, opts.Stdout, opts.Stderr),
 		dirOption(opts.Dir),
@@ -145,6 +148,39 @@ func ExpandFields(s string) ([]string, error) {
 
 func execHandler(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
 	return interp.DefaultExecHandler(15 * time.Second)
+}
+
+func execJs(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
+	return func(ctx context.Context, args []string) error {
+		if !experiments.Interp.Enabled() || (args[0] != "qjs" && args[0] != "civet") {
+			return next(ctx, args)
+		}
+
+		hc := interp.HandlerCtx(ctx)
+
+		taskJs.Setup()
+		js, err := taskJs.NewJavaScript()
+		if err != nil {
+			return fmt.Errorf("js: uninitialized")
+		}
+		defer js.Close()
+
+		env := map[string]string{}
+		hc.Env.Each(func(name string, v expand.Variable) bool {
+			env[name] = v.String()
+			return true
+		})
+		opts := &taskJs.JSEvalFileOptions{
+			File:    filepathext.SmartJoin(hc.Dir, args[1]),
+			Dialect: args[0],
+			Env:     env,
+			Stdin:   hc.Stdin,
+			Stdout:  hc.Stdout,
+			Stderr:  hc.Stderr,
+		}
+		_, err = js.EvalFile(opts)
+		return err
+	}
 }
 
 func openHandler(ctx context.Context, path string, flag int, perm os.FileMode) (io.ReadWriteCloser, error) {

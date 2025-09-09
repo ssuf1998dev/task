@@ -35,6 +35,15 @@ type JSEvalOptions struct {
 	Stderr  io.Writer
 }
 
+type JSEvalFileOptions struct {
+	File    string
+	Dialect string
+	Env     map[string]string
+	Stdin   io.Reader
+	Stdout  io.Writer
+	Stderr  io.Writer
+}
+
 var (
 	ctx            context.Context
 	cache          wazero.CompilationCache
@@ -137,6 +146,49 @@ func (js *JavaScript) Eval(options *JSEvalOptions) (string, error) {
 	}
 
 	exit, _, err := js.plugin.Call("eval", []byte(options.Script))
+	if err != nil {
+		return "", err
+	}
+	if exit > 0 {
+		return "", fmt.Errorf("js: unknown error, exit with code %d", exit)
+	}
+	if options.Stdout != nil {
+		_, _ = options.Stdout.Write(js.stdout.Bytes())
+	}
+	if options.Stderr != nil {
+		_, _ = options.Stderr.Write(js.stderr.Bytes())
+	}
+	return js.stdout.String(), nil
+}
+
+func (js *JavaScript) EvalFile(options *JSEvalFileOptions) (string, error) {
+	if options == nil {
+		return "", fmt.Errorf("js: nil options given")
+	}
+
+	if js.stdin != nil {
+		js.stdin.Reset()
+	}
+	if js.stdout != nil {
+		js.stdout.Reset()
+	}
+	if js.stderr != nil {
+		js.stderr.Reset()
+	}
+
+	if options.Env != nil {
+		if envJson, err := json.Marshal(options.Env); err == nil {
+			_, _, _ = js.plugin.Call("setEnv", []byte(envJson))
+		}
+	}
+
+	js.plugin.Config["evalFile.dialect"] = options.Dialect
+
+	if options.Stdin != nil {
+		_, _ = options.Stdin.Read(js.stdin.Bytes())
+	}
+
+	exit, _, err := js.plugin.Call("evalFile", []byte(options.File))
 	if err != nil {
 		return "", err
 	}
