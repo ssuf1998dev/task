@@ -1,20 +1,19 @@
 package ssh
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"time"
 
-	scp "github.com/bramvdbogaerde/go-scp"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
+	"golang.org/x/sync/errgroup"
 )
 
 type SshClient struct {
 	client *ssh.Client
-	scp    *scp.Client
 }
 
 type NewOptions struct {
@@ -73,20 +72,15 @@ func NewSshClient(options *NewOptions) (*SshClient, error) {
 		return nil, err
 	}
 
-	scp, err := scp.NewClientBySSH(client)
-	if err != nil {
-		return nil, err
-	}
-
-	return &SshClient{client: client, scp: &scp}, nil
+	return &SshClient{client: client}, nil
 }
 
 type RunOptions struct {
-	Command string
-	Env     map[string]string
-	Stdin   io.Reader
-	Stdout  io.Writer
-	Stderr  io.Writer
+	Commands []string
+	Env      map[string]string
+	Stdin    io.Reader
+	Stdout   io.Writer
+	Stderr   io.Writer
 }
 
 func (s *SshClient) Run(options *RunOptions) error {
@@ -116,7 +110,7 @@ func (s *SshClient) Run(options *RunOptions) error {
 		return err
 	}
 
-	cmds := []string{options.Command, "exit", "\x00"}
+	cmds := append(options.Commands, "exit", "\x00")
 	for _, cmd := range cmds {
 		fmt.Fprintf(writer, "%s\n", cmd)
 	}
@@ -125,10 +119,6 @@ func (s *SshClient) Run(options *RunOptions) error {
 }
 
 func (s *SshClient) Upload(source string, target string) error {
-	if s.scp == nil {
-		return fmt.Errorf("scp is nil")
-	}
-
 	f, err := os.Open(source)
 	if err != nil {
 		return err
@@ -140,8 +130,41 @@ func (s *SshClient) Upload(source string, target string) error {
 		return err
 	}
 
-	perm := fmt.Sprintf("%04o", stat.Mode().Perm())
-	return s.scp.CopyFromFile(context.Background(), *f, target, perm)
+	session, err := s.client.NewSession()
+	if err != nil {
+		return err
+	}
+	defer session.Close()
+
+	writer, err := session.StdinPipe()
+	if err != nil {
+		return err
+	}
+	defer writer.Close()
+
+	session.Start(fmt.Sprintf("%s -qt %q", "scp", target))
+	g := errgroup.Group{}
+	g.Go(func() error {
+		defer writer.Close()
+		_, err := fmt.Fprintln(writer, fmt.Sprintf("C%04o", stat.Mode().Perm()), stat.Size(), path.Base(target))
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(writer, f)
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprint(writer, "\x00")
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	g.Go(func() error {
+		return session.Wait()
+	})
+
+	return g.Wait()
 }
 
 func (s *SshClient) Close() error {

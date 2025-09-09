@@ -401,11 +401,11 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 					upload.Done()
 				}
 				return sshClient.Run(&taskSsh.RunOptions{
-					Command: cmd.Cmd,
-					Env:     env.GetMap(t, false),
-					Stdin:   e.Stdin,
-					Stdout:  stdOut,
-					Stderr:  stdErr,
+					Commands: []string{cmd.Cmd},
+					Env:      env.GetMap(t, false),
+					Stdin:    e.Stdin,
+					Stdout:   stdOut,
+					Stderr:   stdErr,
 				})
 			}()
 		} else {
