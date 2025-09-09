@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -13,7 +14,8 @@ import (
 )
 
 type SshClient struct {
-	client *ssh.Client
+	client   *ssh.Client
+	uploaded *sync.Once
 }
 
 type NewOptions struct {
@@ -72,7 +74,7 @@ func NewSshClient(options *NewOptions) (*SshClient, error) {
 		return nil, err
 	}
 
-	return &SshClient{client: client}, nil
+	return &SshClient{client: client, uploaded: &sync.Once{}}, nil
 }
 
 type RunOptions struct {
@@ -110,15 +112,44 @@ func (s *SshClient) Run(options *RunOptions) error {
 		return err
 	}
 
-	cmds := append(options.Commands, "exit", "\x00")
-	for _, cmd := range cmds {
-		fmt.Fprintf(writer, "%s\n", cmd)
-	}
+	cmds := append(options.Commands, "\x00")
+	g := errgroup.Group{}
+	g.Go(func() error {
+		defer writer.Close()
+		for _, cmd := range cmds {
+			_, err := fmt.Fprintf(writer, "%s\n", cmd)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	g.Go(func() error {
+		return session.Wait()
+	})
 
-	return session.Wait()
+	return g.Wait()
 }
 
-func (s *SshClient) Upload(source string, target string) error {
+type UploadOnceOptions = []struct {
+	Source string
+	Target string
+}
+
+func (s *SshClient) UploadOnce(options UploadOnceOptions) error {
+	var err error
+	s.uploaded.Do(func() {
+		for _, upload := range options {
+			err = s.upload(upload.Source, upload.Target)
+			if err != nil {
+				return
+			}
+		}
+	})
+	return err
+}
+
+func (s *SshClient) upload(source string, target string) error {
 	f, err := os.Open(source)
 	if err != nil {
 		return err
@@ -155,10 +186,7 @@ func (s *SshClient) Upload(source string, target string) error {
 			return err
 		}
 		_, err = fmt.Fprint(writer, "\x00")
-		if err != nil {
-			return err
-		}
-		return nil
+		return err
 	})
 	g.Go(func() error {
 		return session.Wait()

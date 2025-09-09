@@ -13,7 +13,6 @@ import (
 type SshUpload struct {
 	Source string
 	Target string
-	done   bool
 }
 
 func (u *SshUpload) DeepCopy() *SshUpload {
@@ -42,20 +41,14 @@ func (u *SshUpload) UnmarshalYAML(node *yaml.Node) error {
 		var item struct {
 			Source string
 			Target string
-			done   bool
 		}
 		if err := node.Decode(&item); err != nil {
 			return errors.NewTaskfileDecodeError(err, node)
 		}
-		item.done = false
 		*u = item
 		return nil
 	}
 	return errors.NewTaskfileDecodeError(nil, node).WithTypeMessage("upload")
-}
-
-func (u *SshUpload) Done() {
-	u.done = true
 }
 
 type Ssh struct {
