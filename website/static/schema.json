@@ -12,6 +12,83 @@
         "type": "string"
       }
     },
+    "ssh": {
+      "anyOf": [
+        {
+          "description": "The URL to connect SSH server.",
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "url": {
+              "description": "The URL to connect SSH server.",
+              "type": "string"
+            },
+            "addr": {
+              "description": "The address to connect SSH server.",
+              "type": "string"
+            },
+            "user": {
+              "description": "Username to authenticate as.",
+              "type": "string"
+            },
+            "password": {
+              "description": "Password to authenticate with.",
+              "type": "string"
+            },
+            "key": {
+              "description": "Private key content to authenticate with.",
+              "type": "string"
+            },
+            "keyPath": {
+              "description": "Private key file to authenticate with.",
+              "type": "string"
+            },
+            "knownHosts": {
+              "description": "`known_hosts` files to check host key.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "timeout": {
+              "description": "Timeout for SSH connection to host. Defaults to 0s for no timeout",
+              "type": "integer",
+              "default": 0
+            },
+            "insecure": {
+              "description": "Will accept any host key.",
+              "type": "boolean",
+              "default": false
+            },
+            "uploads": {
+              "description": "Upload files to host.",
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "[\\s\\S]+:[\\s\\S]+"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "source": {
+                        "type": "string"
+                      },
+                      "target": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
     "plugin": {
       "anyOf": [
         {
@@ -213,6 +290,10 @@
           "description": "Specifies which platforms the task should be run on.",
           "$ref": "#/definitions/platforms"
         },
+        "ssh": {
+          "description": "Run the task on a remote server.",
+          "$ref": "#/definitions/ssh"
+        },
         "requires": {
           "description": "A list of variables which should be set if this task is to run, if any of these variables are unset the task will error and not run",
           "$ref": "#/definitions/requires_obj"
@@ -379,6 +460,10 @@
           "description": "Specifies which platforms the command should be run on.",
           "$ref": "#/definitions/platforms"
         },
+        "ssh": {
+          "description": "Run the command on a remote server.",
+          "$ref": "#/definitions/ssh"
+        },
         "interp": {
           "description": "Customise interpreter that executes commands.",
           "$ref": "#/definitions/interp"
@@ -442,6 +527,10 @@
         "platforms": {
           "description": "Specifies which platforms the command should be run on.",
           "$ref": "#/definitions/platforms"
+        },
+        "ssh": {
+          "description": "Run the command on a remote server.",
+          "$ref": "#/definitions/ssh"
         }
       },
       "oneOf": [

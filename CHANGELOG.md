@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v3.44.1-1.2.0 - 2025-09-10
 
 - Lazy-initialize JavaSript interpreter.
 - SSH tasks and commands.
