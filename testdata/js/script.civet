@@ -1,1 +1,1 @@
-[1,2,3].reduce (+) |> print
+scriptArgs |> .slice 1 |> .map Number |> .reduce (+) |> print

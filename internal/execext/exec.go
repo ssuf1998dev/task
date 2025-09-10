@@ -174,6 +174,7 @@ func execJs(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
 			File:    filepathext.SmartJoin(hc.Dir, args[1]),
 			Dialect: args[0],
 			Env:     env,
+			Args:    args[2:],
 			Stdin:   hc.Stdin,
 			Stdout:  hc.Stdout,
 			Stderr:  hc.Stderr,
