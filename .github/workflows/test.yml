@@ -43,6 +43,19 @@ jobs:
           fileName: "qjs.wasm"
           out-file-path: "internal/js"
 
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
+        if: matrix.platform == 'ubuntu-latest'
+
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v1
+        if: matrix.platform == 'ubuntu-latest'
+
+      - name: Up sshd
+        working-directory: ./testdata/ssh
+        run: docker compose up -d
+        if: matrix.platform == 'ubuntu-latest'
+
       - name: Build
         run: go build -o ./bin/task -v ./cmd/task
 

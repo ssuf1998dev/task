@@ -392,20 +392,22 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 
 		if sshClient != nil {
 			err = func() error {
-				for _, upload := range sshUploads {
-					err := sshClient.Upload(filepathext.SmartJoin(t.Dir, upload.Source), upload.Target)
-					if err != nil {
+				if len(sshUploads) > 0 {
+					u := taskSsh.UploadOnceOptions{}
+					for _, upload := range sshUploads {
+						upload.Source = filepathext.SmartJoin(t.Dir, upload.Source)
+						u = append(u, upload)
+					}
+					if err := sshClient.UploadOnce(u); err != nil {
 						return err
 					}
-					// TODO hash check
-					upload.Done()
 				}
 				return sshClient.Run(&taskSsh.RunOptions{
-					Command: cmd.Cmd,
-					Env:     env.GetMap(t, false),
-					Stdin:   e.Stdin,
-					Stdout:  stdOut,
-					Stderr:  stdErr,
+					Commands: []string{cmd.Cmd},
+					Env:      env.GetMap(t, false),
+					Stdin:    e.Stdin,
+					Stdout:   stdOut,
+					Stderr:   stdErr,
 				})
 			}()
 		} else {
