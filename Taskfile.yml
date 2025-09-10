@@ -229,8 +229,13 @@ tasks:
       - npm publish --access=public
 
   qjs:
-    desc: Download latest qjs.wasm
+    vars:
+      VERSION:
+    desc: Download qjs.wasm
     dir: internal/js
-    cmd: wget -nv -O qjs.wasm https://github.com/ssuf1998dev/task-quickjs-ng/releases/latest/download/qjs.wasm
+    cmd: wget -nv -O qjs.wasm https://github.com/ssuf1998dev/task-quickjs-ng/releases/download/{{.VERSION}}/qjs.wasm
     preconditions:
       - command -v wget
+    requires:
+      vars:
+        - VERSION
