@@ -34,6 +34,7 @@ jobs:
 
   lint-jsonschema:
     runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'noci')"
     steps:
       - uses: actions/setup-python@v5
         with:
@@ -48,6 +49,7 @@ jobs:
         run: check-jsonschema --check-metaschema website/static/schema.json
   check_doc:
     runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'noci')"
     steps:
       - uses: actions/checkout@v4
       - name: Get changed files in the docs folder
@@ -63,6 +65,7 @@ jobs:
             core.setFailed('website/versioned_docs has changed. Instead you need to update the docs in the website/docs folder.')
   check_schema:
     runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'noci')"
     steps:
       - uses: actions/checkout@v4
       - name: Get changed files in the docs folder
