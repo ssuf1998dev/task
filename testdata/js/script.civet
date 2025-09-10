@@ -1,0 +1,1 @@
+scriptArgs |> .slice 1 |> .map Number |> .reduce (+) |> print

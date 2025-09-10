@@ -34,7 +34,7 @@ b:
 			`
 a:
   file: a.wasm
-  allowedPaths:
+  mounts:
     data: /mnt
   sysNanosleep: true
   sysNanotime: true
@@ -47,7 +47,7 @@ a:
 			ast.NewPlugins(
 				&ast.PluginElement{Key: "a", Value: &ast.Plugin{
 					File:         "a.wasm",
-					AllowedPaths: map[string]string{"data": "/mnt"},
+					Mounts:       map[string]string{"data": "/mnt"},
 					SysNanosleep: true,
 					SysNanotime:  true,
 					SysWalltime:  true,
