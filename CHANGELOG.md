@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Lazy-initialize JavaSript interpreter.
+- SSH tasks and commands.
+- Upload file through SSH.
+- Eval JavaSript or Civet scripts by shell command.
+
 ## v3.44.1-1.1.1 - 2025-08-10
 
 - Refactor JavaSript interpreter using QuickJS wasi lib, [libquickjs](https://gitlab.com/cznic/libquickjs) is removed.
