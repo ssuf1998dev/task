@@ -173,7 +173,10 @@ func (s *SshClient) upload(source string, target string) error {
 	}
 	defer writer.Close()
 
-	session.Start(fmt.Sprintf("%s -qt %q", "scp", target))
+	err = session.Start(fmt.Sprintf("%s -qt %q", "scp", target))
+	if err != nil {
+		return err
+	}
 	g := errgroup.Group{}
 	g.Go(func() error {
 		defer writer.Close()
