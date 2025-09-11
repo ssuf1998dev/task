@@ -6,6 +6,12 @@ tasks:
     ssh: //root:foobar@{{.HOST}}?insecure&timeout=3
     cmd: whoami
 
+  whoami-3-times:
+    ssh: //root:foobar@{{.HOST}}?insecure&timeout=3
+    cmds:
+      - for: ["0", "1", "2"]
+        cmd: whoami
+
   whoami-cmd:
     cmd:
       cmd: whoami

@@ -2005,6 +2005,7 @@ func TestSsh(t *testing.T) {
 		output string
 	}{
 		{task: "whoami", output: "root\n"},
+		{task: "whoami-3-times", output: "root\nroot\nroot\n"},
 		{task: "whoami-cmd", output: "root\n"},
 		{task: "for", output: "alice\nbob\ncharlie\n"},
 		{task: "ls", output: ".\n..\n"},
