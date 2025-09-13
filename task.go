@@ -364,45 +364,19 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		}
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
 
-		sshClient := t.SshClient
-		if cmd.Ssh != nil {
-			sshClient, err = taskSsh.NewSshClient(&taskSsh.NewOptions{
-				Addr:       cmd.Ssh.Addr,
-				User:       cmd.Ssh.User,
-				Password:   cmd.Ssh.Password,
-				Key:        cmd.Ssh.Key,
-				KeyPath:    cmd.Ssh.KeyPath,
-				KnownHosts: cmd.Ssh.KnownHosts,
-				Timeout:    cmd.Ssh.Timeout,
-				Insecure:   cmd.Ssh.Insecure || e.Insecure,
-			})
-			if err != nil {
-				return &errors.TaskSSHConnectError{TaskName: call.Task, Err: err}
-			}
-			defer sshClient.Close()
-		}
-
-		var sshUploads []ast.SshUpload
-		if t.Ssh != nil {
-			sshUploads = t.Ssh.Uploads
-		}
-		if cmd.Ssh != nil && cmd.Ssh.Uploads != nil {
-			sshUploads = cmd.Ssh.Uploads
-		}
-
-		if sshClient != nil {
+		if t.SshClient != nil {
 			err = func() error {
-				if len(sshUploads) > 0 {
+				if len(t.Ssh.Uploads) > 0 {
 					u := taskSsh.UploadOnceOptions{}
-					for _, upload := range sshUploads {
+					for _, upload := range t.Ssh.Uploads {
 						upload.Source = filepathext.SmartJoin(t.Dir, upload.Source)
 						u = append(u, upload)
 					}
-					if err := sshClient.UploadOnce(u); err != nil {
+					if err := t.SshClient.UploadOnce(u); err != nil {
 						return err
 					}
 				}
-				return sshClient.Run(&taskSsh.RunOptions{
+				return t.SshClient.Run(&taskSsh.RunOptions{
 					Commands: []string{cmd.Cmd},
 					Env:      env.GetMap(t, false),
 					Stdin:    e.Stdin,

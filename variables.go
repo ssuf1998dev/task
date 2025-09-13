@@ -181,12 +181,6 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 					newCmd.Cmd = templater.ReplaceWithExtra(cmd.Cmd, cache, extra)
 					newCmd.Task = templater.ReplaceWithExtra(cmd.Task, cache, extra)
 					newCmd.Vars = templater.ReplaceVarsWithExtra(cmd.Vars, cache, extra)
-					if err := compileSsh(newCmd.Ssh, cache, extra); err != nil {
-						return nil, errors.TaskfileInvalidError{
-							URI: origTask.Location.Taskfile,
-							Err: err,
-						}
-					}
 					new.Cmds = append(new.Cmds, newCmd)
 				}
 				continue
@@ -201,12 +195,6 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 			newCmd.Cmd = templater.Replace(cmd.Cmd, cache)
 			newCmd.Task = templater.Replace(cmd.Task, cache)
 			newCmd.Vars = templater.ReplaceVars(cmd.Vars, cache)
-			if err := compileSsh(newCmd.Ssh, cache, nil); err != nil {
-				return nil, errors.TaskfileInvalidError{
-					URI: origTask.Location.Taskfile,
-					Err: err,
-				}
-			}
 			new.Cmds = append(new.Cmds, newCmd)
 		}
 	}

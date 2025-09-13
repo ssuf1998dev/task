@@ -12,17 +12,6 @@ tasks:
       - for: ["0", "1", "2"]
         cmd: whoami
 
-  whoami-cmd:
-    cmd:
-      cmd: whoami
-      ssh: //root:foobar@{{.HOST}}?insecure
-
-  for:
-    cmds:
-      - for: [alice, bob, charlie]
-        cmd: echo "{{.ITEM}}"
-        ssh: //root:foobar@{{.HOST}}?insecure
-
   ls:
     ssh:
       addr: "{{.HOST}}"

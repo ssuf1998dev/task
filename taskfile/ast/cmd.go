@@ -19,7 +19,6 @@ type Cmd struct {
 	IgnoreError bool
 	Defer       bool
 	Platforms   []*Platform
-	Ssh         *Ssh
 	Interp      string
 }
 
@@ -38,7 +37,6 @@ func (c *Cmd) DeepCopy() *Cmd {
 		IgnoreError: c.IgnoreError,
 		Defer:       c.Defer,
 		Platforms:   deepcopy.Slice(c.Platforms),
-		Ssh:         c.Ssh.DeepCopy(),
 		Interp:      c.Interp,
 	}
 }
@@ -111,7 +109,6 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 			c.Shopt = cmdStruct.Shopt
 			c.IgnoreError = cmdStruct.IgnoreError
 			c.Platforms = cmdStruct.Platforms
-			c.Ssh = cmdStruct.Ssh
 			c.Interp = cmdStruct.Interp
 			return nil
 		}
