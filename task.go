@@ -166,6 +166,27 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 				return err
 			}
 
+			if call.Indirect && call.SshClient != nil && (t.Ssh == nil || (t.Ssh != nil && !t.Ssh.Disabled)) {
+				t.SshClient = call.SshClient
+			} else {
+				if t.Ssh != nil && !t.Ssh.Disabled {
+					t.SshClient, err = taskSsh.NewSshClient(&taskSsh.NewOptions{
+						Addr:       t.Ssh.Addr,
+						User:       t.Ssh.User,
+						Password:   t.Ssh.Password,
+						Key:        t.Ssh.Key,
+						KeyPath:    t.Ssh.KeyPath,
+						KnownHosts: t.Ssh.KnownHosts,
+						Timeout:    t.Ssh.Timeout,
+						Insecure:   t.Ssh.Insecure || e.Insecure,
+					})
+					if err != nil {
+						return &errors.TaskSSHConnectError{TaskName: call.Task, Err: err}
+					}
+					defer t.SshClient.Close()
+				}
+			}
+
 			preCondMet, err := e.areTaskPreconditionsMet(ctx, t)
 			if err != nil {
 				return err
@@ -209,27 +230,6 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 
 		if err := e.mkdir(t); err != nil {
 			e.Logger.Errf(logger.Red, "task: cannot make directory %q: %v\n", t.Dir, err)
-		}
-
-		if call.Indirect && call.SshClient != nil && (t.Ssh == nil || (t.Ssh != nil && !t.Ssh.Disabled)) {
-			t.SshClient = call.SshClient
-		} else {
-			if t.Ssh != nil && !t.Ssh.Disabled {
-				t.SshClient, err = taskSsh.NewSshClient(&taskSsh.NewOptions{
-					Addr:       t.Ssh.Addr,
-					User:       t.Ssh.User,
-					Password:   t.Ssh.Password,
-					Key:        t.Ssh.Key,
-					KeyPath:    t.Ssh.KeyPath,
-					KnownHosts: t.Ssh.KnownHosts,
-					Timeout:    t.Ssh.Timeout,
-					Insecure:   t.Ssh.Insecure || e.Insecure,
-				})
-				if err != nil {
-					return &errors.TaskSSHConnectError{TaskName: call.Task, Err: err}
-				}
-				defer t.SshClient.Close()
-			}
 		}
 
 		var deferredExitCode uint8

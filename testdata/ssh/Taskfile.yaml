@@ -8,6 +8,8 @@ tasks:
   whoami:
     ssh: //root:foobar@{{.HOST}}?insecure&timeout=3
     cmd: whoami
+    preconditions:
+      - command -v whoami
 
   whoami-local:
     ssh:
