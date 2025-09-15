@@ -197,7 +197,6 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 			if t.Method != "" {
 				method = t.Method
 			}
-
 			upToDate, err := fingerprint.IsTaskUpToDate(ctx, t,
 				fingerprint.WithMethod(method),
 				fingerprint.WithTempDir(e.TempDir.Fingerprint),
@@ -541,7 +540,6 @@ func (e *Executor) GetTask(call *Call) (*ast.Task, error) {
 			DidYouMean: didYouMean,
 		}
 	}
-
 	return matchingTask, nil
 }
 

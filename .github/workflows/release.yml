@@ -15,7 +15,7 @@ jobs:
           git config --global core.eol lf
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -29,14 +29,26 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24.x
+          go-version: 1.25.x
+
+      - name: npm-login
+        run: |
+          npm config set '//registry.npmjs.org/:_authToken'=${{ secrets.NPM_TOKEN }}
+      - name: Install Task
+        uses: go-task/setup-task@v1
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: "website/package.json"
+          run_install: "true"
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: latest
-          args: release --clean
+          args: release --clean --draft
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
@@ -62,3 +74,11 @@ jobs:
             README.md
             schema.json
             schema-taskrc.json
+          GITHUB_TOKEN: ${{secrets.GH_PAT}}
+          GORELEASER_KEY: ${{secrets.GORELEASER_KEY}}
+          CLOUDSMITH_TOKEN: ${{secrets.CLOUDSMITH_TOKEN}}
+
+      # - name: Deploy Website
+      #   shell: bash
+      #   run: |
+      #     task website:deploy:prod
