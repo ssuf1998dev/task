@@ -16,6 +16,7 @@ var ErrPreconditionFailed = errors.New("task: precondition not met")
 func (e *Executor) areTaskPreconditionsMet(ctx context.Context, t *ast.Task) (bool, error) {
 	for _, p := range t.Preconditions {
 		err := execext.RunCommand(ctx, &execext.RunCommandOptions{
+			Task:    t,
 			Command: p.Sh,
 			Dir:     t.Dir,
 			Env:     env.Get(t),

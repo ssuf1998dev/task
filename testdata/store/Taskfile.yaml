@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=../../website/static/next-schema.json
+version: "3"
+
+tasks:
+  store:
+    cmds:
+      - task.store set foo bar>/dev/null
+      - task.store get foo
+  json:
+    cmds:
+      - task.store set foo bar>/dev/null
+      - task.store toJson

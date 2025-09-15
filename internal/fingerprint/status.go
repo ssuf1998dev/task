@@ -22,6 +22,7 @@ func NewStatusChecker(logger *logger.Logger) StatusCheckable {
 func (checker *StatusChecker) IsUpToDate(ctx context.Context, t *ast.Task) (bool, error) {
 	for _, s := range t.Status {
 		err := execext.RunCommand(ctx, &execext.RunCommandOptions{
+			Task:    t,
 			Command: s,
 			Dir:     t.Dir,
 			Env:     env.Get(t),

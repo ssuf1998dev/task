@@ -45,6 +45,7 @@ type Task struct {
 	SshClient     *taskSsh.SshClient
 	Watch         bool
 	Location      *Location
+	Store         *Store
 	// Populated during merging
 	Namespace            string
 	IncludeVars          *Vars
@@ -90,6 +91,8 @@ func (t *Task) WildcardMatch(name string) (bool, []string) {
 }
 
 func (t *Task) UnmarshalYAML(node *yaml.Node) error {
+	t.Store = NewStore()
+
 	switch node.Kind {
 
 	// Shortcut syntax for a task with a single command
@@ -225,6 +228,7 @@ func (t *Task) DeepCopy() *Task {
 		Ssh:                  t.Ssh.DeepCopy(),
 		SshClient:            nil,
 		Location:             t.Location.DeepCopy(),
+		Store:                t.Store.DeepCopy(),
 		Requires:             t.Requires.DeepCopy(),
 		Namespace:            t.Namespace,
 	}

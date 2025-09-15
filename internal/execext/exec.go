@@ -2,6 +2,7 @@ package execext
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -17,6 +18,8 @@ import (
 	"github.com/go-task/task/v3/experiments"
 	"github.com/go-task/task/v3/internal/filepathext"
 	taskJs "github.com/go-task/task/v3/internal/js"
+	"github.com/go-task/task/v3/taskfile/ast"
+	"github.com/go-task/template"
 )
 
 // ErrNilOptions is returned when a nil options is given
@@ -24,6 +27,7 @@ var ErrNilOptions = errors.New("execext: nil options given")
 
 // RunCommandOptions is the options for the [RunCommand] func.
 type RunCommandOptions struct {
+	Task      *ast.Task
 	Command   string
 	Dir       string
 	Env       []string
@@ -62,7 +66,7 @@ func RunCommand(ctx context.Context, opts *RunCommandOptions) error {
 	r, err := interp.New(
 		interp.Params(params...),
 		interp.Env(expand.ListEnviron(environ...)),
-		interp.ExecHandlers(execJs, execHandler),
+		interp.ExecHandlers(buildExecTaskStore(opts.Task), execJs, execHandler),
 		interp.OpenHandler(openHandler),
 		interp.StdIO(opts.Stdin, opts.Stdout, opts.Stderr),
 		dirOption(opts.Dir),
@@ -150,9 +154,52 @@ func execHandler(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
 	return interp.DefaultExecHandler(15 * time.Second)
 }
 
+func buildExecTaskStore(t *ast.Task) func(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
+	return func(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
+		return func(ctx context.Context, args []string) error {
+			if args[0] != "task.store" || t == nil {
+				return next(ctx, args)
+			}
+
+			hc := interp.HandlerCtx(ctx)
+
+			switch args[1] {
+			case "get":
+				v, ok := t.Store.Get(args[2])
+				if !ok {
+					return nil
+				}
+				tmpl, err := template.New("").Parse("{{.V}}")
+				if err != nil {
+					return err
+				}
+				_ = tmpl.Execute(hc.Stdout, struct{ V any }{V: v})
+				return nil
+			case "set":
+				ok := t.Store.Set(args[2], args[3])
+				if !ok {
+					return nil
+				}
+				_, err := hc.Stdout.Write([]byte(args[3]))
+				return err
+			case "toJson":
+				m := t.Store.ToMap()
+				b, err := json.Marshal(m)
+				if err != nil {
+					return err
+				}
+				_, err = hc.Stdout.Write(b)
+				return err
+			default:
+				return next(ctx, args)
+			}
+		}
+	}
+}
+
 func execJs(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
 	return func(ctx context.Context, args []string) error {
-		if !experiments.Interp.Enabled() || (args[0] != "qjs" && args[0] != "civet") {
+		if !experiments.Interp.Enabled() || (args[0] != "task.qjs" && args[0] != "task.civet") {
 			return next(ctx, args)
 		}
 

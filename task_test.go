@@ -1971,9 +1971,9 @@ func TestJSInShell(t *testing.T) { // nolint:paralleltest // cannot run in paral
 	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "shell"}))
 
 	output := strings.TrimSpace(`
-task: [shell] qjs ./script.js 0
+task: [shell] task.qjs ./script.js 0
 3
-task: [shell] civet ./script.civet 1 2 3
+task: [shell] task.civet ./script.civet 1 2 3
 6`)
 	assert.Contains(t, buff.String(), output)
 }
@@ -2017,6 +2017,43 @@ func TestSsh(t *testing.T) {
 		assert.Equal(t, call.output, stdout.String())
 		stdout.Reset()
 		stderr.Reset()
+	}
+}
+
+func TestStore(t *testing.T) {
+	t.Parallel()
+
+	const dir = "testdata/store"
+	var buff bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir(dir),
+		task.WithStdout(&buff),
+		task.WithStderr(&buff),
+	)
+	require.NoError(t, e.Setup())
+
+	calls := []struct {
+		task   string
+		output string
+	}{
+		{
+			task: "store",
+			output: `task: [store] task.store set foo bar>/dev/null
+task: [store] task.store get foo
+bar`,
+		},
+		{
+			task: "json",
+			output: `task: [json] task.store set foo bar>/dev/null
+task: [json] task.store toJson
+{"foo":"bar"}`,
+		},
+	}
+
+	for _, call := range calls {
+		require.NoError(t, e.Run(context.Background(), &task.Call{Task: call.task}))
+		assert.Equal(t, call.output, buff.String())
+		buff.Reset()
 	}
 }
 

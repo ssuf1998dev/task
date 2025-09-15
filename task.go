@@ -433,6 +433,7 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 				}
 			default:
 				err = execext.RunCommand(ctx, &execext.RunCommandOptions{
+					Task:      t,
 					Command:   cmd.Cmd,
 					Dir:       t.Dir,
 					Env:       env.Get(t),
