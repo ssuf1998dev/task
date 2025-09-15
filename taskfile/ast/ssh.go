@@ -62,7 +62,6 @@ type Ssh struct {
 	Timeout    int
 	Insecure   bool
 	Uploads    []SshUpload
-	Disabled   bool
 }
 
 func (s *Ssh) DeepCopy() *Ssh {
@@ -80,27 +79,19 @@ func (s *Ssh) DeepCopy() *Ssh {
 		Timeout:    s.Timeout,
 		Insecure:   s.Insecure,
 		Uploads:    deepcopy.Slice(s.Uploads),
-		Disabled:   s.Disabled,
 	}
 }
 
 func (s *Ssh) UnmarshalYAML(node *yaml.Node) error {
 	switch node.Kind {
 	case yaml.ScalarNode:
-		var v any
-		err := node.Decode(&v)
+		var url string
+		err := node.Decode(&url)
 		if err != nil {
 			return errors.NewTaskfileDecodeError(err, node)
 		}
-		if url, ok := v.(string); ok {
-			s.Url = url
-			return nil
-		}
-		if enable, ok := v.(bool); ok {
-			s.Disabled = !enable
-			return nil
-		}
-		return errors.NewTaskfileDecodeError(err, node)
+		s.Url = url
+		return nil
 	case yaml.MappingNode:
 		var ssh struct {
 			Url        string
@@ -113,7 +104,6 @@ func (s *Ssh) UnmarshalYAML(node *yaml.Node) error {
 			Timeout    int
 			Insecure   bool
 			Uploads    []SshUpload
-			Disabled   bool
 		}
 		if err := node.Decode(&ssh); err != nil {
 			return errors.NewTaskfileDecodeError(err, node)

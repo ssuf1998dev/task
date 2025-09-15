@@ -36,9 +36,9 @@ a:
   file: a.wasm
   mounts:
     data: /mnt
-  sysNanosleep: true
-  sysNanotime: true
-  sysWalltime: true
+  sys_nanosleep: true
+  sys_nanotime: true
+  sys_walltime: true
   rand: true
   stderr: true
   stdout: true

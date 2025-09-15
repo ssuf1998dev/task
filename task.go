@@ -166,10 +166,10 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 				return err
 			}
 
-			if call.Indirect && call.SshClient != nil && (t.Ssh == nil || (t.Ssh != nil && !t.Ssh.Disabled)) {
+			if call.Indirect && call.SshClient != nil && t.Ssh == nil {
 				t.SshClient = call.SshClient
 			} else {
-				if t.Ssh != nil && !t.Ssh.Disabled {
+				if t.Ssh != nil {
 					t.SshClient, err = taskSsh.NewSshClient(&taskSsh.NewOptions{
 						Addr:       t.Ssh.Addr,
 						User:       t.Ssh.User,
@@ -338,7 +338,11 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		reacquire := e.releaseConcurrencyLimit()
 		defer reacquire()
 
-		err := e.RunTask(ctx, &Call{Task: cmd.Task, Vars: cmd.Vars, SshClient: t.SshClient, Silent: cmd.Silent, Indirect: true})
+		call := &Call{Task: cmd.Task, Vars: cmd.Vars, Silent: cmd.Silent, Indirect: true}
+		if cmd.ThisSsh {
+			call.SshClient = t.SshClient
+		}
+		err := e.RunTask(ctx, call)
 		if err != nil {
 			return err
 		}

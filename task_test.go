@@ -2017,7 +2017,6 @@ func TestSsh(t *testing.T) {
 			task   string
 			output string
 		}{
-			{task: "whoami-local", output: fmt.Sprintf("%s\n", user.Username)},
 			{task: "whoami-include", output: fmt.Sprintf("root\n%s\n", user.Username)},
 		}
 		calls = append(calls, callsWithUser...)

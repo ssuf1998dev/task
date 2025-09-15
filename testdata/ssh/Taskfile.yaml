@@ -11,12 +11,6 @@ tasks:
     preconditions:
       - command -v whoami
 
-  whoami-local:
-    ssh:
-      url: //root:foobar@{{.HOST}}?insecure
-      disabled: true
-    cmd: whoami
-
   whoami-3-times:
     ssh: //root:foobar@{{.HOST}}?insecure&timeout=3
     cmds:
@@ -27,7 +21,8 @@ tasks:
     ssh: //root:foobar@{{.HOST}}?insecure&timeout=3
     cmds:
       - task: "include:whoami"
-      - task: "include:whoami-local"
+        this_ssh: true
+      - task: "include:whoami"
 
   ls:
     ssh:
