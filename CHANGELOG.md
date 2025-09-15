@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.45.3-1.2.1 - 2025-09-15
+
+- Ignore output when first login SSH.
+- Support precondition, call another tasks with SSH.
+- Fix schema.
+- Sync v3.45.3.
+
 ## v3.45.3 - 2025-09-15
 
 - Task now includes built-in core utilities to greatly improve compatibility on
