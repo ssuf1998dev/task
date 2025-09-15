@@ -19,6 +19,10 @@
           "type": "string"
         },
         {
+          "description": "Inherit SSH config from the parent task or not.",
+          "type": "boolean"
+        },
+        {
           "type": "object",
           "properties": {
             "url": {
@@ -84,6 +88,10 @@
                   }
                 ]
               }
+            },
+            "disabled": {
+              "description": "Disable SSH or not.",
+              "type": "boolean"
             }
           }
         }

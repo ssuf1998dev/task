@@ -211,21 +211,25 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 			e.Logger.Errf(logger.Red, "task: cannot make directory %q: %v\n", t.Dir, err)
 		}
 
-		if t.Ssh != nil {
-			t.SshClient, err = taskSsh.NewSshClient(&taskSsh.NewOptions{
-				Addr:       t.Ssh.Addr,
-				User:       t.Ssh.User,
-				Password:   t.Ssh.Password,
-				Key:        t.Ssh.Key,
-				KeyPath:    t.Ssh.KeyPath,
-				KnownHosts: t.Ssh.KnownHosts,
-				Timeout:    t.Ssh.Timeout,
-				Insecure:   t.Ssh.Insecure || e.Insecure,
-			})
-			if err != nil {
-				return &errors.TaskSSHConnectError{TaskName: call.Task, Err: err}
+		if call.Indirect && call.SshClient != nil && (t.Ssh == nil || (t.Ssh != nil && !t.Ssh.Disabled)) {
+			t.SshClient = call.SshClient
+		} else {
+			if t.Ssh != nil && !t.Ssh.Disabled {
+				t.SshClient, err = taskSsh.NewSshClient(&taskSsh.NewOptions{
+					Addr:       t.Ssh.Addr,
+					User:       t.Ssh.User,
+					Password:   t.Ssh.Password,
+					Key:        t.Ssh.Key,
+					KeyPath:    t.Ssh.KeyPath,
+					KnownHosts: t.Ssh.KnownHosts,
+					Timeout:    t.Ssh.Timeout,
+					Insecure:   t.Ssh.Insecure || e.Insecure,
+				})
+				if err != nil {
+					return &errors.TaskSSHConnectError{TaskName: call.Task, Err: err}
+				}
+				defer t.SshClient.Close()
 			}
-			defer t.SshClient.Close()
 		}
 
 		var deferredExitCode uint8
@@ -334,7 +338,7 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		reacquire := e.releaseConcurrencyLimit()
 		defer reacquire()
 
-		err := e.RunTask(ctx, &Call{Task: cmd.Task, Vars: cmd.Vars, Silent: cmd.Silent, Indirect: true})
+		err := e.RunTask(ctx, &Call{Task: cmd.Task, Vars: cmd.Vars, SshClient: t.SshClient, Silent: cmd.Silent, Indirect: true})
 		if err != nil {
 			return err
 		}
@@ -366,7 +370,7 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 
 		if t.SshClient != nil {
 			err = func() error {
-				if len(t.Ssh.Uploads) > 0 {
+				if t.Ssh != nil && len(t.Ssh.Uploads) > 0 {
 					u := taskSsh.UploadOnceOptions{}
 					for _, upload := range t.Ssh.Uploads {
 						upload.Source = filepathext.SmartJoin(t.Dir, upload.Source)
