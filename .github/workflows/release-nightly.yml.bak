@@ -1,0 +1,63 @@
+name: Release nightly
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 0 * * *
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set git to use LF
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: robinraju/release-downloader@v1
+        with:
+          repository: "ssuf1998dev/task-quickjs-ng"
+          tag: "v0.6.0"
+          fileName: "qjs.wasm"
+          out-file-path: "internal/js"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.25.x
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean --nightly -f .goreleaser-nightly.yml
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Copy extra files for NPM packages
+        run: |
+          cp website/src/public/schema.json schema.json
+          cp website/src/public/schema-taskrc.json schema-taskrc.json
+
+      - name: Build and publish NPM packages
+        uses: ssuf1998dev/goreleaser-npm-publisher-action@v1.1.0-1.1.0
+        with:
+          token: ${{ secrets.NPM_AUTH_TOKEN }}
+          tag: nightly
+          prefix: "@ssuf1998dev"
+          description: "A task runner / simpler Make alternative written in Go"
+          keywords: |-
+            task
+            taskfile
+            build-tool
+            task-runner
+          files: |-
+            LICENSE
+            README.md
+            schema.json
+            schema-taskrc.json

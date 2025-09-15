@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
+	"mvdan.cc/sh/moreinterp/coreutils"
 	"mvdan.cc/sh/v3/expand"
 	"mvdan.cc/sh/v3/interp"
 	"mvdan.cc/sh/v3/syntax"
@@ -59,10 +59,12 @@ func RunCommand(ctx context.Context, opts *RunCommandOptions) error {
 		environ = os.Environ()
 	}
 
+	allExecHandlers := []func(next interp.ExecHandlerFunc) interp.ExecHandlerFunc{execJs}
+	allExecHandlers = append(allExecHandlers, execHandlers()...)
 	r, err := interp.New(
 		interp.Params(params...),
 		interp.Env(expand.ListEnviron(environ...)),
-		interp.ExecHandlers(execJs, execHandler),
+		interp.ExecHandlers(allExecHandlers...),
 		interp.OpenHandler(openHandler),
 		interp.StdIO(opts.Stdin, opts.Stdout, opts.Stderr),
 		dirOption(opts.Dir),
@@ -146,8 +148,11 @@ func ExpandFields(s string) ([]string, error) {
 	return expand.Fields(cfg, words...)
 }
 
-func execHandler(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
-	return interp.DefaultExecHandler(15 * time.Second)
+func execHandlers() (handlers []func(next interp.ExecHandlerFunc) interp.ExecHandlerFunc) {
+	if useGoCoreUtils {
+		handlers = append(handlers, coreutils.ExecHandler)
+	}
+	return
 }
 
 func execJs(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {

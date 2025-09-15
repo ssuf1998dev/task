@@ -1,6 +1,6 @@
 {
   "yaml.schemas": {
-    "./website/static/schema.json": [
+    "./website/src/public/schema.json": [
       "Taskfile.{yml,yaml}",
       "tmp/**/*.{yml,yaml}"
     ]
