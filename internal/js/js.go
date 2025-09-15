@@ -89,10 +89,10 @@ func NewJavaScript() (*JavaScript, error) {
 	}, nil
 }
 
-func (js *JavaScript) Close() {
+func (js *JavaScript) Close() error {
 	js.stdout.Reset()
 	js.stderr.Reset()
-	js.plugin.Close(ctx)
+	return js.plugin.Close(ctx)
 }
 
 type JSEvalOptions struct {

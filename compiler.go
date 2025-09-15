@@ -191,8 +191,9 @@ func (c *Compiler) HandleDynamicVar(v ast.Var, dir string, e []string) (string, 
 		taskJs.Setup()
 		js, err := taskJs.NewJavaScript()
 		if err != nil {
-			return "", fmt.Errorf("js: uninitialized")
+			return "", fmt.Errorf(`js, %s`, err)
 		}
+		defer js.Close()
 		if _, err := js.Eval(opts); err != nil {
 			return "", fmt.Errorf(`task: Script "%s" failed: %s`, opts.Script, err)
 		}

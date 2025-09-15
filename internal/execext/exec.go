@@ -152,7 +152,7 @@ func execHandler(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
 
 func execJs(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
 	return func(ctx context.Context, args []string) error {
-		if !experiments.Interp.Enabled() || (args[0] != "qjs" && args[0] != "civet") {
+		if !experiments.Interp.Enabled() || (args[0] != "task.qjs" && args[0] != "task.civet") {
 			return next(ctx, args)
 		}
 
@@ -161,7 +161,7 @@ func execJs(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
 		taskJs.Setup()
 		js, err := taskJs.NewJavaScript()
 		if err != nil {
-			return fmt.Errorf("js: uninitialized")
+			return fmt.Errorf(`js, %s`, err)
 		}
 		defer js.Close()
 
@@ -170,9 +170,13 @@ func execJs(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
 			env[name] = v.String()
 			return true
 		})
+		dialect := "js"
+		if args[0] == "task.civet" {
+			dialect = "civet"
+		}
 		opts := &taskJs.JSEvalFileOptions{
 			File:    filepathext.SmartJoin(hc.Dir, args[1]),
-			Dialect: args[0],
+			Dialect: dialect,
 			Env:     env,
 			Args:    args[2:],
 			Stdin:   hc.Stdin,

@@ -1971,9 +1971,9 @@ func TestJSInShell(t *testing.T) { // nolint:paralleltest // cannot run in paral
 	require.NoError(t, e.Run(context.Background(), &task.Call{Task: "shell"}))
 
 	output := strings.TrimSpace(`
-task: [shell] qjs ./script.js 0
+task: [shell] task.qjs ./script.js 0
 3
-task: [shell] civet ./script.civet 1 2 3
+task: [shell] task.civet ./script.civet 1 2 3
 6`)
 	assert.Contains(t, buff.String(), output)
 }

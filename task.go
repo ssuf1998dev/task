@@ -428,8 +428,9 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 						Stdout:  stdOut,
 						Stderr:  stdErr,
 					})
+					defer js.Close()
 				} else {
-					err = fmt.Errorf("js: uninitialized")
+					err = fmt.Errorf("js, %s", jsErr)
 				}
 			default:
 				err = execext.RunCommand(ctx, &execext.RunCommandOptions{
