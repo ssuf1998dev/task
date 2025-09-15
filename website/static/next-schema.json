@@ -100,7 +100,19 @@
             "file": {
               "description": "The path for loading plugin. If a relative path, resolved relative to the directory containing the including Taskfile.",
               "type": "string"
-            }
+            },
+            "mounts": {
+              "type": "object",
+              "patternProperties": {
+                "^.*$": { "type": "string" }
+              }
+            },
+            "sys_nanosleep": { "type": "boolean" },
+            "sys_nanotime": { "type": "boolean" },
+            "sys_walltime": { "type": "boolean" },
+            "rand": { "type": "boolean" },
+            "stderr": { "type": "boolean" },
+            "stdout": { "type": "boolean" }
           }
         }
       ]
@@ -422,6 +434,10 @@
         "silent": {
           "description": "Hides task name and command from output. The command's output will still be redirected to `STDOUT` and `STDERR`.",
           "type": "boolean"
+        },
+        "this_ssh": {
+          "description": "Executes the task with it's parent task ssh config.",
+          "type": "boolean"
         }
       },
       "additionalProperties": false,
@@ -459,10 +475,6 @@
         "platforms": {
           "description": "Specifies which platforms the command should be run on.",
           "$ref": "#/definitions/platforms"
-        },
-        "ssh": {
-          "description": "Run the command on a remote server.",
-          "$ref": "#/definitions/ssh"
         },
         "interp": {
           "description": "Customise interpreter that executes commands.",
@@ -527,10 +539,6 @@
         "platforms": {
           "description": "Specifies which platforms the command should be run on.",
           "$ref": "#/definitions/platforms"
-        },
-        "ssh": {
-          "description": "Run the command on a remote server.",
-          "$ref": "#/definitions/ssh"
         }
       },
       "oneOf": [

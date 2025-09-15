@@ -11,6 +11,7 @@ import (
 type Cmd struct {
 	Cmd         string
 	Task        string
+	ThisSsh     bool `yaml:"this_ssh"`
 	For         *For
 	Silent      bool
 	Set         []string
@@ -19,7 +20,6 @@ type Cmd struct {
 	IgnoreError bool
 	Defer       bool
 	Platforms   []*Platform
-	Ssh         *Ssh
 	Interp      string
 }
 
@@ -30,6 +30,7 @@ func (c *Cmd) DeepCopy() *Cmd {
 	return &Cmd{
 		Cmd:         c.Cmd,
 		Task:        c.Task,
+		ThisSsh:     c.ThisSsh,
 		For:         c.For.DeepCopy(),
 		Silent:      c.Silent,
 		Set:         deepcopy.Slice(c.Set),
@@ -38,7 +39,6 @@ func (c *Cmd) DeepCopy() *Cmd {
 		IgnoreError: c.IgnoreError,
 		Defer:       c.Defer,
 		Platforms:   deepcopy.Slice(c.Platforms),
-		Ssh:         c.Ssh.DeepCopy(),
 		Interp:      c.Interp,
 	}
 }
@@ -58,6 +58,7 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 		var cmdStruct struct {
 			Cmd         string
 			Task        string
+			ThisSsh     bool `yaml:"this_ssh"`
 			For         *For
 			Silent      bool
 			Set         []string
@@ -86,6 +87,7 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 			if cmdStruct.Defer.Task != "" {
 				c.Defer = true
 				c.Task = cmdStruct.Defer.Task
+				c.ThisSsh = cmdStruct.ThisSsh
 				c.Vars = cmdStruct.Defer.Vars
 				c.Silent = cmdStruct.Defer.Silent
 				return nil
@@ -96,6 +98,7 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 		// A task call
 		if cmdStruct.Task != "" {
 			c.Task = cmdStruct.Task
+			c.ThisSsh = cmdStruct.ThisSsh
 			c.Vars = cmdStruct.Vars
 			c.For = cmdStruct.For
 			c.Silent = cmdStruct.Silent
@@ -111,7 +114,6 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 			c.Shopt = cmdStruct.Shopt
 			c.IgnoreError = cmdStruct.IgnoreError
 			c.Platforms = cmdStruct.Platforms
-			c.Ssh = cmdStruct.Ssh
 			c.Interp = cmdStruct.Interp
 			return nil
 		}

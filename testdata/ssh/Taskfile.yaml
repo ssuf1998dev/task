@@ -1,21 +1,28 @@
 # yaml-language-server: $schema=../../website/static/next-schema.json
 version: "3"
 
+includes:
+  include: ./Taskfile.include.yaml
+
 tasks:
   whoami:
     ssh: //root:foobar@{{.HOST}}?insecure&timeout=3
     cmd: whoami
+    preconditions:
+      - command -v whoami
 
-  whoami-cmd:
-    cmd:
-      cmd: whoami
-      ssh: //root:foobar@{{.HOST}}?insecure
-
-  for:
+  whoami-3-times:
+    ssh: //root:foobar@{{.HOST}}?insecure&timeout=3
     cmds:
-      - for: [alice, bob, charlie]
-        cmd: echo "{{.ITEM}}"
-        ssh: //root:foobar@{{.HOST}}?insecure
+      - for: ["0", "1", "2"]
+        cmd: whoami
+
+  whoami-include:
+    ssh: //root:foobar@{{.HOST}}?insecure&timeout=3
+    cmds:
+      - task: "include:whoami"
+        this_ssh: true
+      - task: "include:whoami"
 
   ls:
     ssh:

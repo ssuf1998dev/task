@@ -166,6 +166,27 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 				return err
 			}
 
+			if call.Indirect && call.SshClient != nil && t.Ssh == nil {
+				t.SshClient = call.SshClient
+			} else {
+				if t.Ssh != nil {
+					t.SshClient, err = taskSsh.NewSshClient(&taskSsh.NewOptions{
+						Addr:       t.Ssh.Addr,
+						User:       t.Ssh.User,
+						Password:   t.Ssh.Password,
+						Key:        t.Ssh.Key,
+						KeyPath:    t.Ssh.KeyPath,
+						KnownHosts: t.Ssh.KnownHosts,
+						Timeout:    t.Ssh.Timeout,
+						Insecure:   t.Ssh.Insecure || e.Insecure,
+					})
+					if err != nil {
+						return &errors.TaskSSHConnectError{TaskName: call.Task, Err: err}
+					}
+					defer t.SshClient.Close()
+				}
+			}
+
 			preCondMet, err := e.areTaskPreconditionsMet(ctx, t)
 			if err != nil {
 				return err
@@ -209,23 +230,6 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 
 		if err := e.mkdir(t); err != nil {
 			e.Logger.Errf(logger.Red, "task: cannot make directory %q: %v\n", t.Dir, err)
-		}
-
-		if t.Ssh != nil {
-			t.SshClient, err = taskSsh.NewSshClient(&taskSsh.NewOptions{
-				Addr:       t.Ssh.Addr,
-				User:       t.Ssh.User,
-				Password:   t.Ssh.Password,
-				Key:        t.Ssh.Key,
-				KeyPath:    t.Ssh.KeyPath,
-				KnownHosts: t.Ssh.KnownHosts,
-				Timeout:    t.Ssh.Timeout,
-				Insecure:   t.Ssh.Insecure || e.Insecure,
-			})
-			if err != nil {
-				return &errors.TaskSSHConnectError{TaskName: call.Task, Err: err}
-			}
-			defer t.SshClient.Close()
 		}
 
 		var deferredExitCode uint8
@@ -334,7 +338,11 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		reacquire := e.releaseConcurrencyLimit()
 		defer reacquire()
 
-		err := e.RunTask(ctx, &Call{Task: cmd.Task, Vars: cmd.Vars, Silent: cmd.Silent, Indirect: true})
+		call := &Call{Task: cmd.Task, Vars: cmd.Vars, Silent: cmd.Silent, Indirect: true}
+		if cmd.ThisSsh {
+			call.SshClient = t.SshClient
+		}
+		err := e.RunTask(ctx, call)
 		if err != nil {
 			return err
 		}
@@ -364,45 +372,19 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		}
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
 
-		sshClient := t.SshClient
-		if cmd.Ssh != nil {
-			sshClient, err = taskSsh.NewSshClient(&taskSsh.NewOptions{
-				Addr:       cmd.Ssh.Addr,
-				User:       cmd.Ssh.User,
-				Password:   cmd.Ssh.Password,
-				Key:        cmd.Ssh.Key,
-				KeyPath:    cmd.Ssh.KeyPath,
-				KnownHosts: cmd.Ssh.KnownHosts,
-				Timeout:    cmd.Ssh.Timeout,
-				Insecure:   cmd.Ssh.Insecure || e.Insecure,
-			})
-			if err != nil {
-				return &errors.TaskSSHConnectError{TaskName: call.Task, Err: err}
-			}
-			defer sshClient.Close()
-		}
-
-		var sshUploads []ast.SshUpload
-		if t.Ssh != nil {
-			sshUploads = t.Ssh.Uploads
-		}
-		if cmd.Ssh != nil && cmd.Ssh.Uploads != nil {
-			sshUploads = cmd.Ssh.Uploads
-		}
-
-		if sshClient != nil {
+		if t.SshClient != nil {
 			err = func() error {
-				if len(sshUploads) > 0 {
+				if t.Ssh != nil && len(t.Ssh.Uploads) > 0 {
 					u := taskSsh.UploadOnceOptions{}
-					for _, upload := range sshUploads {
+					for _, upload := range t.Ssh.Uploads {
 						upload.Source = filepathext.SmartJoin(t.Dir, upload.Source)
 						u = append(u, upload)
 					}
-					if err := sshClient.UploadOnce(u); err != nil {
+					if err := t.SshClient.UploadOnce(u); err != nil {
 						return err
 					}
 				}
-				return sshClient.Run(&taskSsh.RunOptions{
+				return t.SshClient.Run(&taskSsh.RunOptions{
 					Commands: []string{cmd.Cmd},
 					Env:      env.GetMap(t, false),
 					Stdin:    e.Stdin,

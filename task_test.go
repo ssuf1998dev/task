@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/user"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -2005,11 +2006,20 @@ func TestSsh(t *testing.T) {
 		output string
 	}{
 		{task: "whoami", output: "root\n"},
-		{task: "whoami-cmd", output: "root\n"},
-		{task: "for", output: "alice\nbob\ncharlie\n"},
+		{task: "whoami-3-times", output: "root\nroot\nroot\n"},
 		{task: "ls", output: ".\n..\n"},
 		{task: "env", output: "BAR\n"},
 		{task: "upload", output: ".\n..\nTaskfile.yaml\n"},
+	}
+
+	if user, err := user.Current(); err == nil {
+		callsWithUser := []struct {
+			task   string
+			output string
+		}{
+			{task: "whoami-include", output: fmt.Sprintf("root\n%s\n", user.Username)},
+		}
+		calls = append(calls, callsWithUser...)
 	}
 
 	for _, call := range calls {

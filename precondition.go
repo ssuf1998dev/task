@@ -7,6 +7,7 @@ import (
 	"github.com/go-task/task/v3/internal/env"
 	"github.com/go-task/task/v3/internal/execext"
 	"github.com/go-task/task/v3/internal/logger"
+	taskSsh "github.com/go-task/task/v3/internal/ssh"
 	"github.com/go-task/task/v3/taskfile/ast"
 )
 
@@ -15,6 +16,18 @@ var ErrPreconditionFailed = errors.New("task: precondition not met")
 
 func (e *Executor) areTaskPreconditionsMet(ctx context.Context, t *ast.Task) (bool, error) {
 	for _, p := range t.Preconditions {
+		if t.SshClient != nil {
+			err := t.SshClient.Run(&taskSsh.RunOptions{
+				Commands: []string{p.Sh},
+				Env:      env.GetMap(t, false),
+			})
+			if err != nil {
+				// TODO logging
+				return false, ErrPreconditionFailed
+			}
+			continue
+		}
+
 		err := execext.RunCommand(ctx, &execext.RunCommandOptions{
 			Command: p.Sh,
 			Dir:     t.Dir,

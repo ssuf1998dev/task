@@ -18,9 +18,9 @@ type (
 	Plugin struct {
 		File         string
 		Mounts       map[string]string
-		SysNanosleep bool `yaml:"sysNanosleep"`
-		SysNanotime  bool `yaml:"sysNanotime"`
-		SysWalltime  bool `yaml:"sysWalltime"`
+		SysNanosleep bool `yaml:"sys_nanosleep"`
+		SysNanotime  bool `yaml:"sys_nanotime"`
+		SysWalltime  bool `yaml:"sys_walltime"`
 		Rand         bool
 		Stderr       bool
 		Stdout       bool
@@ -153,9 +153,9 @@ func (plugin *Plugin) UnmarshalYAML(node *yaml.Node) error {
 		var v struct {
 			File         string
 			Mounts       map[string]string
-			SysNanosleep bool `yaml:"sysNanosleep"`
-			SysNanotime  bool `yaml:"sysNanotime"`
-			SysWalltime  bool `yaml:"sysWalltime"`
+			SysNanosleep bool `yaml:"sys_nanosleep"`
+			SysNanotime  bool `yaml:"sys_nanotime"`
+			SysWalltime  bool `yaml:"sys_walltime"`
 			Rand         bool
 			Stderr       bool
 			Stdout       bool

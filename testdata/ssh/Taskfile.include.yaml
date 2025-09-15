@@ -1,0 +1,6 @@
+# yaml-language-server: $schema=../../website/static/next-schema.json
+version: "3"
+
+tasks:
+  whoami:
+    cmd: whoami

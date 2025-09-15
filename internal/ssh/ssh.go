@@ -74,7 +74,12 @@ func NewSshClient(options *NewOptions) (*SshClient, error) {
 		return nil, err
 	}
 
-	return &SshClient{client: client, uploaded: &sync.Once{}}, nil
+	s := &SshClient{client: client, uploaded: &sync.Once{}}
+	err = s.Run(&RunOptions{Commands: []string{""}})
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
 }
 
 type RunOptions struct {
