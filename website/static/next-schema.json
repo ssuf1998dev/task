@@ -100,7 +100,19 @@
             "file": {
               "description": "The path for loading plugin. If a relative path, resolved relative to the directory containing the including Taskfile.",
               "type": "string"
-            }
+            },
+            "mounts": {
+              "type": "object",
+              "patternProperties": {
+                "^.*$": { "type": "string" }
+              }
+            },
+            "sys_nanosleep": { "type": "boolean" },
+            "sys_nanotime": { "type": "boolean" },
+            "sys_walltime": { "type": "boolean" },
+            "rand": { "type": "boolean" },
+            "stderr": { "type": "boolean" },
+            "stdout": { "type": "boolean" }
           }
         }
       ]
