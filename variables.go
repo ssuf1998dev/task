@@ -157,12 +157,32 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 		cache.ResetCache()
 	}
 
+	if origTask.If != nil {
+		new.If = origTask.If
+		if len(new.If.Value) > 0 {
+			new.If = templater.Replace(new.If, cache)
+		}
+		if new.If.Sh != nil {
+			new.If.Sh = *templater.Replace(&new.If.Sh, cache)
+		}
+	}
+
 	if len(origTask.Cmds) > 0 {
 		new.Cmds = make([]*ast.Cmd, 0, len(origTask.Cmds))
 		for _, cmd := range origTask.Cmds {
 			if cmd == nil {
 				continue
 			}
+
+			if cmd.If != nil {
+				if len(cmd.If.Value) > 0 {
+					cmd.If = templater.Replace(cmd.If, cache)
+				}
+				if cmd.If.Sh != nil {
+					cmd.If.Sh = *templater.Replace(&cmd.If.Sh, cache)
+				}
+			}
+
 			if cmd.For != nil {
 				list, keys, err := itemsFromFor(cmd.For, new.Dir, new.Sources, new.Generates, vars, origTask.Location, cache)
 				if err != nil {

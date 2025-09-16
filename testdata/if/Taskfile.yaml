@@ -1,0 +1,42 @@
+version: "3"
+
+vars:
+  FOO: "BAR"
+
+tasks:
+  cmd-if-true:
+    cmds:
+      - cmd: echo 1
+        if: '{{eq .FOO "BAR"}}'
+
+  cmd-if-sh:
+    cmds:
+      - cmd: echo 1
+        if: { sh: "echo true" }
+
+  cmd-if-false:
+    cmds:
+      - cmd: echo 1
+        if: '{{eq .FOO "FOO"}}'
+
+  defer-cmd-if-true:
+    cmds:
+      - cmd: echo 1
+      - defer: echo 2
+        if: '{{eq .FOO "BAR"}}'
+
+  defer-cmd-if-false:
+    cmds:
+      - cmd: echo 1
+      - defer: echo 2
+        if: '{{eq .FOO "FOO"}}'
+
+  task-if-true:
+    if: '{{eq .FOO "BAR"}}'
+    cmd: echo 1
+
+  task-if-false:
+    if: '{{eq .FOO "FOO"}}'
+    cmds:
+      - echo 1
+      - echo 2

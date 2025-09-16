@@ -15,6 +15,7 @@ import (
 // Task represents a task
 type Task struct {
 	Task          string
+	If            *If
 	Cmds          []*Cmd
 	Deps          []*Dep
 	Label         string
@@ -118,6 +119,7 @@ func (t *Task) UnmarshalYAML(node *yaml.Node) error {
 	// Full task object
 	case yaml.MappingNode:
 		var task struct {
+			If            *If
 			Cmds          []*Cmd
 			Cmd           *Cmd
 			Deps          []*Dep
@@ -151,6 +153,7 @@ func (t *Task) UnmarshalYAML(node *yaml.Node) error {
 		if err := node.Decode(&task); err != nil {
 			return errors.NewTaskfileDecodeError(err, node)
 		}
+		t.If = task.If
 		if task.Cmd != nil {
 			if task.Cmds != nil {
 				return errors.NewTaskfileDecodeError(nil, node).WithMessage("task cannot have both cmd and cmds")
@@ -200,6 +203,7 @@ func (t *Task) DeepCopy() *Task {
 	}
 	c := &Task{
 		Task:                 t.Task,
+		If:                   t.If.DeepCopy(),
 		Cmds:                 deepcopy.Slice(t.Cmds),
 		Deps:                 deepcopy.Slice(t.Deps),
 		Label:                t.Label,

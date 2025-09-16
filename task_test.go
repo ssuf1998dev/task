@@ -2046,6 +2046,39 @@ func TestSsh(t *testing.T) {
 	}
 }
 
+func TestIf(t *testing.T) {
+	t.Parallel()
+
+	const dir = "testdata/if"
+	var buff bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir(dir),
+		task.WithStdout(&buff),
+		task.WithStderr(&buff),
+	)
+	require.NoError(t, e.Setup())
+
+	calls := []struct {
+		task   string
+		output string
+	}{
+		{task: "cmd-if-true", output: "task: [cmd-if-true] echo 1\n1\n"},
+		{task: "cmd-if-false", output: "task: [cmd-if-false] echo 1\n"},
+		{task: "cmd-if-sh", output: "task: [cmd-if-sh] echo 1\n1\n"},
+		{task: "defer-cmd-if-true", output: "task: [defer-cmd-if-true] echo 1\n1\ntask: [defer-cmd-if-true] echo 2\n2\n"},
+		{task: "defer-cmd-if-false", output: "task: [defer-cmd-if-false] echo 1\n1\ntask: [defer-cmd-if-false] echo 2\n"},
+
+		{task: "task-if-true", output: "task: [task-if-true] echo 1\n1\n"},
+		{task: "task-if-false", output: ""},
+	}
+
+	for _, call := range calls {
+		require.NoError(t, e.Run(t.Context(), &task.Call{Task: call.task}))
+		assert.Equal(t, call.output, buff.String())
+		buff.Reset()
+	}
+}
+
 func TestExitCodeZero(t *testing.T) {
 	t.Parallel()
 

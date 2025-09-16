@@ -131,6 +131,12 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 		return nil
 	}
 
+	if taskIf, err := e.isIf(ctx, t, t.If); err != nil {
+		return err
+	} else if !taskIf {
+		return nil
+	}
+
 	if err := e.areTaskRequiredVarsSet(t); err != nil {
 		return err
 	}
@@ -354,6 +360,12 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 
 		if e.Verbose || (!call.Silent && !cmd.Silent && !t.Silent && !e.Taskfile.Silent && !e.Silent) {
 			e.Logger.Errf(logger.Green, "task: [%s] %s\n", t.Name(), cmd.Cmd)
+		}
+
+		if cmdIf, err := e.isIf(ctx, t, cmd.If); err != nil {
+			return err
+		} else if !cmdIf {
+			return nil
 		}
 
 		if e.Dry {
