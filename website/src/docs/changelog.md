@@ -5,6 +5,12 @@ outline: deep
 
 # Changelog
 
+## v3.45.3-1.2.2 - 2025-09-17
+
+- If, support task and cmd.
+- Support memfs in shell, /dev/task/... .
+- Performance && refactoring.
+
 ## v3.45.3-1.2.1 - 2025-09-15
 
 - Ignore output when first login SSH.
