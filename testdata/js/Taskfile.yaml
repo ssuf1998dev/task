@@ -52,5 +52,5 @@ tasks:
 
   shell:
     cmds:
-      - "qjs ./script.js 0"
-      - "civet ./script.civet 1 2 3"
+      - "task.qjs ./script.js 0"
+      - "task.civet ./script.civet 1 2 3"

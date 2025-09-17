@@ -59,12 +59,10 @@ func RunCommand(ctx context.Context, opts *RunCommandOptions) error {
 		environ = os.Environ()
 	}
 
-	allExecHandlers := []func(next interp.ExecHandlerFunc) interp.ExecHandlerFunc{execJs}
-	allExecHandlers = append(allExecHandlers, execHandlers()...)
 	r, err := interp.New(
 		interp.Params(params...),
 		interp.Env(expand.ListEnviron(environ...)),
-		interp.ExecHandlers(allExecHandlers...),
+		interp.ExecHandlers(execHandlers()...),
 		interp.OpenHandler(openHandler),
 		interp.StdIO(opts.Stdin, opts.Stdout, opts.Stderr),
 		dirOption(opts.Dir),
@@ -149,6 +147,7 @@ func ExpandFields(s string) ([]string, error) {
 }
 
 func execHandlers() (handlers []func(next interp.ExecHandlerFunc) interp.ExecHandlerFunc) {
+	handlers = append(handlers, execJs)
 	if useGoCoreUtils {
 		handlers = append(handlers, coreutils.ExecHandler)
 	}
@@ -157,8 +156,12 @@ func execHandlers() (handlers []func(next interp.ExecHandlerFunc) interp.ExecHan
 
 func execJs(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
 	return func(ctx context.Context, args []string) error {
-		if !experiments.Interp.Enabled() || (args[0] != "qjs" && args[0] != "civet") {
+		if !experiments.Interp.Enabled() || (args[0] != "task.qjs" && args[0] != "task.civet") {
 			return next(ctx, args)
+		}
+
+		if len(args) <= 2 {
+			return fmt.Errorf("missing args: file")
 		}
 
 		hc := interp.HandlerCtx(ctx)
@@ -175,14 +178,21 @@ func execJs(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
 			env[name] = v.String()
 			return true
 		})
+		dialect := "js"
+		if args[0] == "task.civet" {
+			dialect = "civet"
+		}
 		opts := &taskJs.JSEvalFileOptions{
 			File:    filepathext.SmartJoin(hc.Dir, args[1]),
-			Dialect: args[0],
+			Dialect: dialect,
 			Env:     env,
-			Args:    args[2:],
+			Args:    []string{},
 			Stdin:   hc.Stdin,
 			Stdout:  hc.Stdout,
 			Stderr:  hc.Stderr,
+		}
+		if len(args) > 2 {
+			opts.Args = args[2:]
 		}
 		_, err = js.EvalFile(opts)
 		return err
