@@ -134,6 +134,7 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 	if taskIf, err := e.isIf(ctx, t, t.If); err != nil {
 		return err
 	} else if !taskIf {
+		e.Logger.VerboseOutf(logger.Yellow, "task: %q not meet if - skipped\n", call.Task)
 		return nil
 	}
 
@@ -358,14 +359,15 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 			return nil
 		}
 
-		if e.Verbose || (!call.Silent && !cmd.Silent && !t.Silent && !e.Taskfile.Silent && !e.Silent) {
-			e.Logger.Errf(logger.Green, "task: [%s] %s\n", t.Name(), cmd.Cmd)
-		}
-
 		if cmdIf, err := e.isIf(ctx, t, cmd.If); err != nil {
 			return err
 		} else if !cmdIf {
+			e.Logger.VerboseOutf(logger.Yellow, "task: %q not meet if - skipped\n", call.Task)
 			return nil
+		}
+
+		if e.Verbose || (!call.Silent && !cmd.Silent && !t.Silent && !e.Taskfile.Silent && !e.Silent) {
+			e.Logger.Errf(logger.Green, "task: [%s] %s\n", t.Name(), cmd.Cmd)
 		}
 
 		if e.Dry {

@@ -2055,6 +2055,7 @@ func TestIf(t *testing.T) {
 		task.WithDir(dir),
 		task.WithStdout(&buff),
 		task.WithStderr(&buff),
+		task.WithVerbose(true),
 	)
 	require.NoError(t, e.Setup())
 
@@ -2062,14 +2063,41 @@ func TestIf(t *testing.T) {
 		task   string
 		output string
 	}{
-		{task: "cmd-if-true", output: "task: [cmd-if-true] echo 1\n1\n"},
-		{task: "cmd-if-false", output: "task: [cmd-if-false] echo 1\n"},
-		{task: "cmd-if-sh", output: "task: [cmd-if-sh] echo 1\n1\n"},
-		{task: "defer-cmd-if-true", output: "task: [defer-cmd-if-true] echo 1\n1\ntask: [defer-cmd-if-true] echo 2\n2\n"},
-		{task: "defer-cmd-if-false", output: "task: [defer-cmd-if-false] echo 1\n1\ntask: [defer-cmd-if-false] echo 2\n"},
+		{task: "cmd-if-true", output: `task: "cmd-if-true" started
+task: [cmd-if-true] echo 1
+1
+task: "cmd-if-true" finished
+`},
+		{task: "cmd-if-false", output: `task: "cmd-if-false" started
+task: "cmd-if-false" not meet if - skipped
+task: "cmd-if-false" finished
+`},
+		{task: "cmd-if-sh", output: `task: "cmd-if-sh" started
+task: [cmd-if-sh] echo 1
+1
+task: "cmd-if-sh" finished
+`},
+		{task: "defer-cmd-if-true", output: `task: "defer-cmd-if-true" started
+task: [defer-cmd-if-true] echo 1
+1
+task: "defer-cmd-if-true" finished
+task: [defer-cmd-if-true] echo 2
+2
+`},
+		{task: "defer-cmd-if-false", output: `task: "defer-cmd-if-false" started
+task: [defer-cmd-if-false] echo 1
+1
+task: "defer-cmd-if-false" finished
+task: "defer-cmd-if-false" not meet if - skipped
+`},
 
-		{task: "task-if-true", output: "task: [task-if-true] echo 1\n1\n"},
-		{task: "task-if-false", output: ""},
+		{task: "task-if-true", output: `task: "task-if-true" started
+task: [task-if-true] echo 1
+1
+task: "task-if-true" finished
+`},
+		{task: "task-if-false", output: `task: "task-if-false" not meet if - skipped
+`},
 	}
 
 	for _, call := range calls {
