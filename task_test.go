@@ -2125,6 +2125,9 @@ func TestDevTask(t *testing.T) {
 		`task: [default] echo bar >/dev/task/foo
 task: [default] cat </dev/task/foo
 bar
+task: [default] echo foobar >/dev/task/foo/bar
+task: [default] cat </dev/task/foo/bar
+foobar
 `,
 		buff.String(),
 	)
