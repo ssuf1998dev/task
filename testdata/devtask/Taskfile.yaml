@@ -1,0 +1,9 @@
+version: 3
+
+tasks:
+  default:
+    cmds:
+      - echo bar >/dev/task/foo
+      - cat </dev/task/foo
+      - echo foobar >/dev/task/foo/bar
+      - cat </dev/task/foo/bar

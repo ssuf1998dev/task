@@ -2107,6 +2107,33 @@ task: "task-if-true" finished
 	}
 }
 
+func TestDevTask(t *testing.T) {
+	t.Parallel()
+
+	const dir = "testdata/devtask"
+	var buff bytes.Buffer
+	e := task.NewExecutor(
+		task.WithDir(dir),
+		task.WithStdout(&buff),
+		task.WithStderr(&buff),
+	)
+	require.NoError(t, e.Setup())
+
+	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "default"}))
+	assert.Equal(
+		t,
+		`task: [default] echo bar >/dev/task/foo
+task: [default] cat </dev/task/foo
+bar
+task: [default] echo foobar >/dev/task/foo/bar
+task: [default] cat </dev/task/foo/bar
+foobar
+`,
+		buff.String(),
+	)
+	buff.Reset()
+}
+
 func TestExitCodeZero(t *testing.T) {
 	t.Parallel()
 
