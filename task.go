@@ -411,7 +411,7 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		}
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(originStdout, e.Stderr, t.Prefix, outputTemplater)
 
-		if t.SshClient != nil {
+		if t.SshClient != nil && cmd.ThisSsh {
 			err = t.SshClient.Run(&taskSsh.RunOptions{
 				Commands: []string{cmd.Cmd},
 				Env:      env.GetMap(t, false),

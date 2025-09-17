@@ -56,13 +56,14 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 			return errors.NewTaskfileDecodeError(err, node)
 		}
 		c.Cmd = cmd
+		c.ThisSsh = true
 		return nil
 
 	case yaml.MappingNode:
 		var cmdStruct struct {
 			Cmd         string
 			Task        string
-			ThisSsh     bool   `yaml:"this_ssh"`
+			ThisSsh     *bool  `yaml:"this_ssh"`
 			StdoutFile  string `yaml:"stdout_file"`
 			If          *If
 			For         *For
@@ -86,6 +87,11 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 				c.Defer = true
 				c.Cmd = cmdStruct.Defer.Cmd
 				c.StdoutFile = cmdStruct.StdoutFile
+				if cmdStruct.ThisSsh == nil {
+					c.ThisSsh = true
+				} else {
+					c.ThisSsh = *cmdStruct.ThisSsh
+				}
 				c.If = cmdStruct.If
 				c.Silent = cmdStruct.Silent
 				return nil
@@ -95,7 +101,11 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 			if cmdStruct.Defer.Task != "" {
 				c.Defer = true
 				c.Task = cmdStruct.Defer.Task
-				c.ThisSsh = cmdStruct.ThisSsh
+				if cmdStruct.ThisSsh == nil {
+					c.ThisSsh = false
+				} else {
+					c.ThisSsh = *cmdStruct.ThisSsh
+				}
 				c.Vars = cmdStruct.Defer.Vars
 				c.Silent = cmdStruct.Defer.Silent
 				return nil
@@ -106,7 +116,11 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 		// A task call
 		if cmdStruct.Task != "" {
 			c.Task = cmdStruct.Task
-			c.ThisSsh = cmdStruct.ThisSsh
+			if cmdStruct.ThisSsh == nil {
+				c.ThisSsh = false
+			} else {
+				c.ThisSsh = *cmdStruct.ThisSsh
+			}
 			c.Vars = cmdStruct.Vars
 			c.For = cmdStruct.For
 			c.Silent = cmdStruct.Silent
@@ -117,6 +131,11 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 		if cmdStruct.Cmd != "" {
 			c.Cmd = cmdStruct.Cmd
 			c.StdoutFile = cmdStruct.StdoutFile
+			if cmdStruct.ThisSsh == nil {
+				c.ThisSsh = true
+			} else {
+				c.ThisSsh = *cmdStruct.ThisSsh
+			}
 			c.If = cmdStruct.If
 			c.For = cmdStruct.For
 			c.Silent = cmdStruct.Silent
