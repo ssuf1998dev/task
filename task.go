@@ -175,22 +175,30 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 
 			if call.Indirect && call.SshClient != nil && t.Ssh == nil {
 				t.SshClient = call.SshClient
-			} else {
-				if t.Ssh != nil {
-					t.SshClient, err = taskSsh.NewSshClient(&taskSsh.NewOptions{
-						Addr:       t.Ssh.Addr,
-						User:       t.Ssh.User,
-						Password:   t.Ssh.Password,
-						Key:        t.Ssh.Key,
-						KeyPath:    t.Ssh.KeyPath,
-						KnownHosts: t.Ssh.KnownHosts,
-						Timeout:    t.Ssh.Timeout,
-						Insecure:   t.Ssh.Insecure || e.Insecure,
-					})
-					if err != nil {
-						return &errors.TaskSSHConnectError{TaskName: call.Task, Err: err}
+			} else if t.Ssh != nil {
+				t.SshClient, err = taskSsh.NewSshClient(&taskSsh.NewOptions{
+					Addr:       t.Ssh.Addr,
+					User:       t.Ssh.User,
+					Password:   t.Ssh.Password,
+					Key:        t.Ssh.Key,
+					KeyPath:    t.Ssh.KeyPath,
+					KnownHosts: t.Ssh.KnownHosts,
+					Timeout:    t.Ssh.Timeout,
+					Insecure:   t.Ssh.Insecure || e.Insecure,
+				})
+				if err != nil {
+					return &errors.TaskSSHConnectError{TaskName: call.Task, Err: err}
+				}
+				defer t.SshClient.Close()
+				if len(t.Ssh.Uploads) > 0 {
+					u := taskSsh.UploadOnceOptions{}
+					for _, upload := range t.Ssh.Uploads {
+						upload.Source = filepathext.SmartJoin(t.Dir, upload.Source)
+						u = append(u, upload)
 					}
-					defer t.SshClient.Close()
+					if err := t.SshClient.UploadOnce(u); err != nil {
+						return err
+					}
 				}
 			}
 
@@ -386,25 +394,13 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
 
 		if t.SshClient != nil {
-			err = func() error {
-				if t.Ssh != nil && len(t.Ssh.Uploads) > 0 {
-					u := taskSsh.UploadOnceOptions{}
-					for _, upload := range t.Ssh.Uploads {
-						upload.Source = filepathext.SmartJoin(t.Dir, upload.Source)
-						u = append(u, upload)
-					}
-					if err := t.SshClient.UploadOnce(u); err != nil {
-						return err
-					}
-				}
-				return t.SshClient.Run(&taskSsh.RunOptions{
-					Commands: []string{cmd.Cmd},
-					Env:      env.GetMap(t, false),
-					Stdin:    e.Stdin,
-					Stdout:   stdOut,
-					Stderr:   stdErr,
-				})
-			}()
+			err = t.SshClient.Run(&taskSsh.RunOptions{
+				Commands: []string{cmd.Cmd},
+				Env:      env.GetMap(t, false),
+				Stdin:    e.Stdin,
+				Stdout:   stdOut,
+				Stderr:   stdErr,
+			})
 		} else {
 			intp := "sh"
 			if experiments.Interp.Enabled() {
@@ -414,6 +410,7 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 			case "javascript", "js", "civet":
 				taskJs.Setup()
 				if js, jsErr := taskJs.NewJavaScript(); jsErr == nil {
+					defer js.Close()
 					_, err = js.Eval(&taskJs.JSEvalOptions{
 						Script:  cmd.Cmd,
 						Dialect: intp,
