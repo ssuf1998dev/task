@@ -46,6 +46,7 @@ type Task struct {
 	SshClient     *taskSsh.SshClient
 	Watch         bool
 	Location      *Location
+	StdoutFile    string `yaml:"stdout_file"`
 	// Populated during merging
 	Namespace            string
 	IncludeVars          *Vars
@@ -147,6 +148,7 @@ func (t *Task) UnmarshalYAML(node *yaml.Node) error {
 			Run           string
 			Platforms     []*Platform
 			Ssh           *Ssh
+			StdoutFile    string `yaml:"stdout_file"`
 			Requires      *Requires
 			Watch         bool
 		}
@@ -187,6 +189,7 @@ func (t *Task) UnmarshalYAML(node *yaml.Node) error {
 		t.Run = task.Run
 		t.Platforms = task.Platforms
 		t.Ssh = task.Ssh
+		t.StdoutFile = task.StdoutFile
 		t.Requires = task.Requires
 		t.Watch = task.Watch
 		return nil
@@ -234,6 +237,7 @@ func (t *Task) DeepCopy() *Task {
 		Ssh:                  t.Ssh.DeepCopy(),
 		SshClient:            nil,
 		Location:             t.Location.DeepCopy(),
+		StdoutFile:           t.StdoutFile,
 		Requires:             t.Requires.DeepCopy(),
 		Namespace:            t.Namespace,
 		FullName:             t.FullName,

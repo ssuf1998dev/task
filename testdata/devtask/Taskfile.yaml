@@ -7,3 +7,13 @@ tasks:
       - cat </dev/task/foo
       - echo foobar >/dev/task/foo/bar
       - cat </dev/task/foo/bar
+      - cmd: echo foobar
+        stdout_file: /dev/task/cmd/foobar
+      - cat </dev/task/cmd/foobar
+
+  task_stdout_file:
+    stdout_file: /dev/task/task/foobar
+    cmds:
+      - echo foobar
+      - cmd: cat </dev/task/task/foobar
+        stdout_file: /dev/stdout

@@ -201,11 +201,11 @@ func execJs(next interp.ExecHandlerFunc) interp.ExecHandlerFunc {
 
 func openHandler(ctx context.Context, path string, flag int, perm os.FileMode) (io.ReadWriteCloser, error) {
 	if path == "/dev/null" {
-		return devNull{}, nil
+		return DevNull{}, nil
 	}
 	if strings.HasPrefix(path, "/dev/task/") {
 		filename := strings.TrimPrefix(path, "/dev/task")
-		return devTask.File(filename), nil
+		return DevTask.File(filename), nil
 	}
 	return interp.DefaultOpenHandler()(ctx, path, flag, perm)
 }

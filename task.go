@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 	"slices"
+	"strings"
 	"sync/atomic"
 
 	"golang.org/x/sync/errgroup"
@@ -391,7 +392,24 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 		if err != nil {
 			return fmt.Errorf("task: failed to get variables: %w", err)
 		}
-		stdOut, stdErr, closer := outputWrapper.WrapWriter(e.Stdout, e.Stderr, t.Prefix, outputTemplater)
+		originStdout := e.Stdout
+		stdoutFile := t.StdoutFile
+		if len(cmd.StdoutFile) > 0 {
+			stdoutFile = cmd.StdoutFile
+		}
+		if len(stdoutFile) > 0 {
+			if strings.HasPrefix(stdoutFile, "/dev/task/") {
+				filename := strings.TrimPrefix(stdoutFile, "/dev/task")
+				originStdout = execext.DevTask.File(filename)
+			} else if stdoutFile == "/dev/stdout" {
+				originStdout = e.Stdout
+			} else if f, err := os.OpenFile(stdoutFile, os.O_RDWR|os.O_CREATE, 0o666); err == nil {
+				originStdout = f
+			} else {
+				originStdout = execext.DevNull{}
+			}
+		}
+		stdOut, stdErr, closer := outputWrapper.WrapWriter(originStdout, e.Stderr, t.Prefix, outputTemplater)
 
 		if t.SshClient != nil {
 			err = t.SshClient.Run(&taskSsh.RunOptions{

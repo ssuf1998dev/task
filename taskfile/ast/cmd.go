@@ -11,7 +11,8 @@ import (
 type Cmd struct {
 	Cmd         string
 	Task        string
-	ThisSsh     bool `yaml:"this_ssh"`
+	ThisSsh     bool   `yaml:"this_ssh"`
+	StdoutFile  string `yaml:"stdout_file"`
 	If          *If
 	For         *For
 	Silent      bool
@@ -32,6 +33,7 @@ func (c *Cmd) DeepCopy() *Cmd {
 		Cmd:         c.Cmd,
 		Task:        c.Task,
 		ThisSsh:     c.ThisSsh,
+		StdoutFile:  c.StdoutFile,
 		If:          c.If.DeepCopy(),
 		For:         c.For.DeepCopy(),
 		Silent:      c.Silent,
@@ -60,7 +62,8 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 		var cmdStruct struct {
 			Cmd         string
 			Task        string
-			ThisSsh     bool `yaml:"this_ssh"`
+			ThisSsh     bool   `yaml:"this_ssh"`
+			StdoutFile  string `yaml:"stdout_file"`
 			If          *If
 			For         *For
 			Silent      bool
@@ -82,6 +85,7 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 			if cmdStruct.Defer.Cmd != "" {
 				c.Defer = true
 				c.Cmd = cmdStruct.Defer.Cmd
+				c.StdoutFile = cmdStruct.StdoutFile
 				c.If = cmdStruct.If
 				c.Silent = cmdStruct.Silent
 				return nil
@@ -112,6 +116,7 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 		// A command with additional options
 		if cmdStruct.Cmd != "" {
 			c.Cmd = cmdStruct.Cmd
+			c.StdoutFile = cmdStruct.StdoutFile
 			c.If = cmdStruct.If
 			c.For = cmdStruct.For
 			c.Silent = cmdStruct.Silent

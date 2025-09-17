@@ -2107,7 +2107,7 @@ task: "task-if-true" finished
 	}
 }
 
-func TestDevTask(t *testing.T) {
+func TestDevTaskFile(t *testing.T) {
 	t.Parallel()
 
 	const dir = "testdata/devtask"
@@ -2127,6 +2127,20 @@ task: [default] cat </dev/task/foo
 bar
 task: [default] echo foobar >/dev/task/foo/bar
 task: [default] cat </dev/task/foo/bar
+foobar
+task: [default] echo foobar
+task: [default] cat </dev/task/cmd/foobar
+foobar
+`,
+		buff.String(),
+	)
+	buff.Reset()
+
+	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "task_stdout_file"}))
+	assert.Equal(
+		t,
+		`task: [task_stdout_file] echo foobar
+task: [task_stdout_file] cat </dev/task/task/foobar
 foobar
 `,
 		buff.String(),

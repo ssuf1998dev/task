@@ -83,6 +83,7 @@ func (e *Executor) compiledTask(call *Call, evaluateShVars bool) (*ast.Task, err
 		Platforms:            origTask.Platforms,
 		Ssh:                  origTask.Ssh,
 		Location:             origTask.Location,
+		StdoutFile:           origTask.StdoutFile,
 		Requires:             origTask.Requires,
 		Watch:                origTask.Watch,
 		Namespace:            origTask.Namespace,

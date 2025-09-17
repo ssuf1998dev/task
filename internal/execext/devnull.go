@@ -4,10 +4,10 @@ import (
 	"io"
 )
 
-var _ io.ReadWriteCloser = devNull{}
+var _ io.ReadWriteCloser = DevNull{}
 
-type devNull struct{}
+type DevNull struct{}
 
-func (devNull) Read(p []byte) (int, error)  { return 0, io.EOF }
-func (devNull) Write(p []byte) (int, error) { return len(p), nil }
-func (devNull) Close() error                { return nil }
+func (DevNull) Read(p []byte) (int, error)  { return 0, io.EOF }
+func (DevNull) Write(p []byte) (int, error) { return len(p), nil }
+func (DevNull) Close() error                { return nil }
