@@ -12,6 +12,7 @@ type Cmd struct {
 	Cmd         string
 	Task        string
 	ThisSsh     bool `yaml:"this_ssh"`
+	If          *If
 	For         *For
 	Silent      bool
 	Set         []string
@@ -31,6 +32,7 @@ func (c *Cmd) DeepCopy() *Cmd {
 		Cmd:         c.Cmd,
 		Task:        c.Task,
 		ThisSsh:     c.ThisSsh,
+		If:          c.If.DeepCopy(),
 		For:         c.For.DeepCopy(),
 		Silent:      c.Silent,
 		Set:         deepcopy.Slice(c.Set),
@@ -59,6 +61,7 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 			Cmd         string
 			Task        string
 			ThisSsh     bool `yaml:"this_ssh"`
+			If          *If
 			For         *For
 			Silent      bool
 			Set         []string
@@ -79,6 +82,7 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 			if cmdStruct.Defer.Cmd != "" {
 				c.Defer = true
 				c.Cmd = cmdStruct.Defer.Cmd
+				c.If = cmdStruct.If
 				c.Silent = cmdStruct.Silent
 				return nil
 			}
@@ -108,6 +112,7 @@ func (c *Cmd) UnmarshalYAML(node *yaml.Node) error {
 		// A command with additional options
 		if cmdStruct.Cmd != "" {
 			c.Cmd = cmdStruct.Cmd
+			c.If = cmdStruct.If
 			c.For = cmdStruct.For
 			c.Silent = cmdStruct.Silent
 			c.Set = cmdStruct.Set

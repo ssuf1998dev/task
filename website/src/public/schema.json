@@ -117,6 +117,17 @@
         }
       ]
     },
+    "if": {
+      "anyOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "sh": { "type":"string" }
+          }
+        }
+      ]
+    },
     "interp": {
       "type": "string",
       "enum": ["sh", "js", "javascript", "civet"]
@@ -159,6 +170,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "if": { "$ref": "#/definitions/if" },
         "cmds": {
           "description": "A list of commands to be executed.",
           "$ref": "#/definitions/cmds"
@@ -450,6 +462,7 @@
           "description": "Command to run",
           "type": "string"
         },
+        "if": { "$ref": "#/definitions/if" },
         "silent": {
           "description": "Silent mode disables echoing of command before Task runs it",
           "type": "boolean"
@@ -506,6 +519,7 @@
           "description": "Name of the command to defer",
           "type": "string"
         },
+        "if": { "$ref": "#/definitions/if" },
         "silent": {
           "description": "Hides task name and command from output. The command's output will still be redirected to `STDOUT` and `STDERR`.",
           "type": "boolean"

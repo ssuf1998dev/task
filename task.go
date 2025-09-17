@@ -131,6 +131,13 @@ func (e *Executor) RunTask(ctx context.Context, call *Call) error {
 		return nil
 	}
 
+	if taskIf, err := e.isIf(ctx, t, t.If); err != nil {
+		return err
+	} else if !taskIf {
+		e.Logger.VerboseOutf(logger.Yellow, "task: %q not meet if - skipped\n", call.Task)
+		return nil
+	}
+
 	if err := e.areTaskRequiredVarsSet(t); err != nil {
 		return err
 	}
@@ -349,6 +356,13 @@ func (e *Executor) runCommand(ctx context.Context, t *ast.Task, call *Call, i in
 	case cmd.Cmd != "":
 		if !shouldRunOnCurrentPlatform(cmd.Platforms) {
 			e.Logger.VerboseOutf(logger.Yellow, "task: [%s] %s not for current platform - ignored\n", t.Name(), cmd.Cmd)
+			return nil
+		}
+
+		if cmdIf, err := e.isIf(ctx, t, cmd.If); err != nil {
+			return err
+		} else if !cmdIf {
+			e.Logger.VerboseOutf(logger.Yellow, "task: %q not meet if - skipped\n", call.Task)
 			return nil
 		}
 
